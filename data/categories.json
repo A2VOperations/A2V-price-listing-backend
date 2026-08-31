@@ -1,0 +1,81 @@
+[
+  {
+    "id": "flex-board",
+    "slug": "flex-board",
+    "name": "Flex Board",
+    "image": "/assets/images/categories (14).webp",
+    "description": "Custom Flex Board printing & framing calculator with Iron/Wooden structure options, support rods & installation."
+  },
+  {
+    "id": "visiting-cards",
+    "slug": "visiting-cards",
+    "name": "Visiting Cards",
+    "image": "/assets/images/categories (5).webp"
+  },
+  {
+    "id": "card-holders",
+    "slug": "card-holders",
+    "name": "Card Holders",
+    "image": "/assets/images/categories (6).webp"
+  },
+  {
+    "id": "pamphlets-posters",
+    "slug": "pamphlets-posters",
+    "name": "Pamphlet / Posters",
+    "image": "/assets/images/categories (11).webp"
+  },
+  {
+    "id": "tags",
+    "slug": "tags",
+    "name": "Tags",
+    "image": "/assets/images/categories (2).webp"
+  },
+  {
+    "id": "files",
+    "slug": "files",
+    "name": "Files & Folders",
+    "image": "/assets/images/categories (7).webp"
+  },
+  {
+    "id": "letter-heads",
+    "slug": "letter-heads",
+    "name": "Letter Heads",
+    "image": "/assets/images/categories (13).webp"
+  },
+  {
+    "id": "envelopes",
+    "slug": "envelopes",
+    "name": "Envelopes",
+    "image": "/assets/images/images.jpg"
+  },
+  {
+    "id": "digital-paper-printing",
+    "slug": "digital-paper-printing",
+    "name": "Digital Paper Printing",
+    "image": "/assets/images/categories (1).webp"
+  },
+  {
+    "id": "atm-pouches",
+    "slug": "atm-pouches",
+    "name": "ATM Pouches",
+    "image": "/assets/images/categories (3).webp"
+  },
+  {
+    "id": "bill-books",
+    "slug": "bill-books",
+    "name": "Bill Books",
+    "image": "/assets/images/categories (8).webp"
+  },
+  {
+    "id": "stickers-labels",
+    "slug": "stickers-labels",
+    "name": "Stickers & Labels",
+    "image": "/assets/images/categories (9).webp"
+  },
+  {
+    "id": "pens",
+    "slug": "pens",
+    "name": "Pens",
+    "image": "/assets/images/categories (4).webp"
+  }
+]
