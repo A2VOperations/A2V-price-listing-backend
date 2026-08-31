@@ -1,0 +1,93 @@
+[
+  {
+    "id": "flex-board",
+    "slug": "flex-board",
+    "name": "Flex Board",
+    "image": "/src/assets/images/categories (14).webp",
+    "description": "Custom Flex Board printing & framing calculator with Iron/Wooden structure options, support rods & installation."
+  },
+  {
+    "id": "visiting-cards",
+    "slug": "visiting-cards",
+    "name": "Visiting Cards",
+    "image": "/src/assets/images/categories (5).webp",
+    "description": "Browse all available visiting card specifications, GSM grades, and custom finishing options."
+  },
+  {
+    "id": "card-holders",
+    "slug": "card-holders",
+    "name": "Card Holders",
+    "image": "/src/assets/images/categories (6).webp",
+    "description": "Premium leatherette, metal, and plastic card holders for executive networking."
+  },
+  {
+    "id": "pamphlets-posters",
+    "slug": "pamphlets-posters",
+    "name": "Pamphlet / Posters",
+    "image": "/src/assets/images/categories (11).webp",
+    "description": "High-quality promotional flyers, brochures, and posters in multiple paper weights and sizes."
+  },
+  {
+    "id": "tags",
+    "slug": "tags",
+    "name": "Tags",
+    "image": "/src/assets/images/categories (2).webp",
+    "description": "Custom apparel tags, product swing tags, and luggage tags with die-cut shapes and eyelets."
+  },
+  {
+    "id": "files",
+    "slug": "files",
+    "name": "Files & Folders",
+    "image": "/src/assets/images/categories (7).webp",
+    "description": "Corporate presentation folders, document files, and certificate holders."
+  },
+  {
+    "id": "letter-heads",
+    "slug": "letter-heads",
+    "name": "Letter Heads",
+    "image": "/src/assets/images/categories (13).webp",
+    "description": "Official company letterheads on executive sunshine, bond, and textured paper stocks."
+  },
+  {
+    "id": "envelopes",
+    "slug": "envelopes",
+    "name": "Envelopes",
+    "image": "/src/assets/images/images.jpg",
+    "description": "Custom printed envelopes in standard office and booklet sizes with peel-and-seal strips."
+  },
+  {
+    "id": "digital-paper-printing",
+    "slug": "digital-paper-printing",
+    "name": "Digital Paper Printing",
+    "image": "/src/assets/images/categories (1).webp",
+    "description": "Short-run, high-definition digital paper printing with fast turnaround times."
+  },
+  {
+    "id": "atm-pouches",
+    "slug": "atm-pouches",
+    "name": "ATM Pouches",
+    "image": "/src/assets/images/categories (3).webp",
+    "description": "Branded custom printed ATM card sleeve pouches crafted from premium paper."
+  },
+  {
+    "id": "bill-books",
+    "slug": "bill-books",
+    "name": "Bill Books",
+    "image": "/src/assets/images/categories (8).webp",
+    "description": "Custom duplicate & triplicate carbonless receipt & invoice bill books."
+  },
+  {
+    "id": "stickers-labels",
+    "slug": "stickers-labels",
+    "name": "Stickers & Labels",
+    "image": "/src/assets/images/categories (9).webp",
+    "description": "Custom die-cut paper, vinyl, and transparent stickers and product packaging labels."
+  },
+  {
+    "id": "pens",
+    "slug": "pens",
+    "name": "Pens",
+    "image": "/src/assets/images/categories (4).webp",
+    "description": "Custom branded promotional pens and luxury executive pen gift sets."
+  }
+]
