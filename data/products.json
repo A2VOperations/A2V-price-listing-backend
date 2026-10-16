@@ -4486,80 +4486,75 @@
     "code": "STD-001",
     "categoryId": "flex-board",
     "subCategory": "STANDIE",
-    "name": "Roll-Up Standie Printing & Mechanism Calculator",
+    "name": "Iron Frame Standee & Flex Display Calculator",
     "slug": "rollup-standie",
     "isStandie": true,
     "image": "/products/standie/rollup-standie.jpg",
-    "standeeSize": "2.5 x 6 Ft",
-    "standType": "Standard Aluminium Roll-Up Stand",
-    "widthFt": 2.5,
-    "heightFt": 6,
-    "basePrice": 850,
-    "description": "Complete Roll-Up Standee display calculator: select standard sizes (2.5x6ft, 3x6ft, 2x5ft, 4x6ft) or custom dimensions, aluminium mechanisms, Star Flex/Non-Tearable matte prints & instant quote.",
+    "standeeSize": "5 × 3 Ft",
+    "standType": "Heavy-Duty MS Iron Frame with Angle Rod Stand & Supports",
+    "widthFt": 3,
+    "heightFt": 5,
+    "basePrice": 1580,
+    "description": "Double-sided Iron Frame Standee display calculator: customizable total height & width, 1 ft stand legs, MS iron rod running feet (5+5+3+3 = 16 ft @ ₹35 = ₹560), angle base stand (2 ft @ ₹50 = ₹100), 4x corner support stays (4 @ ₹80 = ₹320), and double-sided flex printing (12 sqft × 2 @ ₹25 = ₹600). Total ₹1,580.",
     "minQuantity": 1,
     "quantityStep": 1,
     "unitName": "Standie(s)",
-    "productionTime": "24 Hours",
+    "productionTime": "24-48 Hours",
     "variantCombinations": [
-      "2.5 × 6 Ft Standard Stand + Star Flex - ₹850",
-      "2.5 × 6 Ft Standard Stand + Non-Tearable Matte - ₹1,150",
-      "3 × 6 Ft Wide Base Stand + Star Flex - ₹1,050",
-      "2 × 5 Ft Compact Stand + Star Flex - ₹700",
-      "2.5 × 6 Ft Luxury Teardrop Stand + Non-Tearable - ₹1,750",
-      "Only Roll-up Stand Mechanism (No Print) - ₹450"
+      "5 × 3 Ft Iron Frame Standee (Double Sided Flex) - ₹1,580",
+      "6 × 3 Ft Iron Frame Standee (Double Sided Flex) - ₹1,855",
+      "6 × 4 Ft Iron Frame Standee (Double Sided Flex) - ₹2,220",
+      "4 × 2.5 Ft Compact Iron Standee (Double Sided Flex) - ₹1,295",
+      "5 × 3 Ft Iron Frame Hardware Only (No Flex) - ₹980"
     ],
     "variantDetails": {
-      "2.5 × 6 Ft Standard Stand + Star Flex - ₹850": {
+      "5 × 3 Ft Iron Frame Standee (Double Sided Flex) - ₹1,580": {
         "code": "STD-101",
-        "basePrice": 850,
-        "mediaType": "Star Flex",
-        "description": "Standard 2.5x6ft Aluminium Roll-Up Standee complete unit with Star Flex printing @ ₹850"
+        "basePrice": 1580,
+        "mediaType": "Normal Flex (Double-Sided)",
+        "description": "Standard 5×3ft MS Iron Frame Standee with 1ft legs, angle base stand, 4 supports, and 4×3ft double-sided flex @ ₹1,580"
       },
-      "2.5 × 6 Ft Standard Stand + Non-Tearable Matte - ₹1,150": {
+      "6 × 3 Ft Iron Frame Standee (Double Sided Flex) - ₹1,855": {
         "code": "STD-102",
-        "basePrice": 1150,
-        "mediaType": "Non-Tearable Matte Film",
-        "description": "2.5x6ft Roll-Up Standee with premium curl-free Non-Tearable Matte Film @ ₹1,150"
+        "basePrice": 1855,
+        "mediaType": "Normal Flex (Double-Sided)",
+        "description": "Tall 6×3ft MS Iron Frame Standee with 1ft legs, angle base stand, 4 supports, and 5×3ft double-sided flex @ ₹1,855"
       },
-      "3 × 6 Ft Wide Base Stand + Star Flex - ₹1,050": {
+      "6 × 4 Ft Iron Frame Standee (Double Sided Flex) - ₹2,220": {
         "code": "STD-103",
-        "basePrice": 1050,
-        "mediaType": "Star Flex",
-        "description": "Wide 3x6ft Roll-Up Standee complete unit with Star Flex printing @ ₹1,050"
+        "basePrice": 2220,
+        "mediaType": "Normal Flex (Double-Sided)",
+        "description": "Jumbo 6×4ft MS Iron Frame Standee with 1ft legs, angle base stand, 4 supports, and 5×4ft double-sided flex @ ₹2,220"
       },
-      "2 × 5 Ft Compact Stand + Star Flex - ₹700": {
+      "4 × 2.5 Ft Compact Iron Standee (Double Sided Flex) - ₹1,295": {
         "code": "STD-104",
-        "basePrice": 700,
-        "mediaType": "Star Flex",
-        "description": "Compact 2x5ft Roll-Up Standee complete unit with Star Flex printing @ ₹700"
+        "basePrice": 1295,
+        "mediaType": "Normal Flex (Double-Sided)",
+        "description": "Compact 4×2.5ft MS Iron Frame Standee with 1ft legs, angle base stand, 4 supports, and 3×2.5ft double-sided flex @ ₹1,295"
       },
-      "2.5 × 6 Ft Luxury Teardrop Stand + Non-Tearable - ₹1,750": {
+      "5 × 3 Ft Iron Frame Hardware Only (No Flex) - ₹980": {
         "code": "STD-105",
-        "basePrice": 1750,
-        "mediaType": "Non-Tearable Matte Film",
-        "description": "2.5x6ft Luxury Teardrop Chrome Broad Base Standee @ ₹1,750"
-      },
-      "Only Roll-up Stand Mechanism (No Print) - ₹450": {
-        "code": "STD-106",
-        "basePrice": 450,
-        "mediaType": "Hardware Only",
-        "description": "2.5x6ft Aluminium Roll-up Stand mechanism with support rod & carry bag @ ₹450"
+        "basePrice": 980,
+        "mediaType": "Frame Only",
+        "description": "5×3ft Welded MS Iron Frame with angle base stand & 4 support stays (without flex printing) @ ₹980"
       }
     },
     "specifications": {
-      "Product Category": "Roll-Up Standie Display & Frame Calculator",
-      "Supported Sizes": "2.5x6 Ft (Standard), 3x6 Ft, 2x5 Ft, 4x6 Ft & Custom Dimensions",
-      "Stand Mechanism": "Anodized Silver Aluminium Roll-Up Casing with twin fold-out feet / Luxury Teardrop / X-Stand",
-      "Printing Media": "Star Flex (₹25/sqft), Non-Tearable Matte Film (₹45/sqft), Normal Flex (₹15/sqft), Satin Fabric (₹55/sqft)",
-      "Protective Lamination": "None (₹0), Matte Lamination (+₹5/sqft), Gloss Lamination (+₹5/sqft)",
-      "Accessories Included": "3-Piece Bungee Support Rod & Padded Nylon Carry Bag",
-      "Production Time": "24 Hours from design approval"
+      "Product Category": "Iron Frame Standee Display Calculator",
+      "Standard Frame Size": "5×3 Ft (Total Height 5 ft, Width 3 ft)",
+      "Leg Ground Clearance": "1 Ft Stand Rod / Clearance at bottom",
+      "Flex Display Area": "4×3 Ft (12 Sq.Ft) Mounted on Both Sides (Front + Back)",
+      "MS Iron Frame": "16 Running Feet Square Pipe (5+5+3+3 ft) @ ₹35/ft",
+      "Angle Base Stand": "2 Base Feet (2 ft running) @ ₹50/ft",
+      "Support Stays": "4 Corner Welded Support Rods @ ₹80/pc",
+      "Printing Media": "Double-Sided High-Resolution Flex @ ₹25/sqft",
+      "Production Time": "24 to 48 Hours"
     },
     "ourSpecialization": [
-      "All-in-one customizable Roll-Up Standee calculator",
-      "High resolution vivid Eco-Solvent / UV printing",
-      "Durable lightweight aluminium mechanism with tension spring",
-      "Includes padded zippered travel bag for easy portability"
+      "Customizable running feet iron pipe fabrication calculator",
+      "Sturdy angle iron base stand with 4 welded corner stays",
+      "High resolution vivid double-sided weather-resistant flex printing",
+      "All-weather durable outdoor and indoor freestanding display"
     ]
   },
   {
