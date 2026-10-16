@@ -4481,6 +4481,374 @@
     ]
   },
   {
+    "_id": "6ad201bd3234a1276a4d6c46",
+    "id": "STD-001",
+    "code": "STD-001",
+    "categoryId": "flex-board",
+    "subCategory": "STANDIE",
+    "name": "Roll-Up Standie - 2.5 × 6 Ft (Standard Aluminium)",
+    "slug": "rollup-standie-2-5x6",
+    "isStandie": true,
+    "image": "/products/standie/rollup-standie.jpg",
+    "standeeSize": "2.5 x 6 Ft",
+    "standType": "Standard Aluminium Roll-Up Stand",
+    "widthFt": 2.5,
+    "heightFt": 6,
+    "basePrice": 850,
+    "description": "Popular standard 2.5ft x 6ft (30\" x 72\") roll-up banner standee with lightweight aluminium casing, foldable support rod, high-res Star Flex/Non-Tearable print, and protective carry bag.",
+    "minQuantity": 1,
+    "quantityStep": 1,
+    "unitName": "Standie(s)",
+    "productionTime": "24 Hours",
+    "variantCombinations": [
+      "Star Flex Print with Stand - ₹850",
+      "Non-Tearable Matte Film with Stand - ₹1,150",
+      "Normal Frontlit Flex with Stand - ₹700",
+      "Only Roll-up Stand Mechanism (No Print) - ₹450",
+      "Only Replacement Banner Print (Star Flex) - ₹400"
+    ],
+    "variantDetails": {
+      "Star Flex Print with Stand - ₹850": {
+        "code": "STD-101",
+        "basePrice": 850,
+        "mediaType": "Star Flex",
+        "description": "2.5x6ft Roll-up Standee complete unit with Star Flex printing @ ₹850"
+      },
+      "Non-Tearable Matte Film with Stand - ₹1,150": {
+        "code": "STD-102",
+        "basePrice": 1150,
+        "mediaType": "Non-Tearable Matte Film",
+        "description": "2.5x6ft Roll-up Standee complete unit with premium Non-Tearable matte synthetic media @ ₹1,150"
+      },
+      "Normal Frontlit Flex with Stand - ₹700": {
+        "code": "STD-103",
+        "basePrice": 700,
+        "mediaType": "Normal Flex",
+        "description": "2.5x6ft Roll-up Standee complete unit with standard frontlit normal flex @ ₹700"
+      },
+      "Only Roll-up Stand Mechanism (No Print) - ₹450": {
+        "code": "STD-104",
+        "basePrice": 450,
+        "mediaType": "No Print (Hardware Only)",
+        "description": "2.5x6ft Aluminium Roll-up Stand mechanism with support rod & carry bag @ ₹450"
+      },
+      "Only Replacement Banner Print (Star Flex) - ₹400": {
+        "code": "STD-105",
+        "basePrice": 400,
+        "mediaType": "Star Flex Print Only",
+        "description": "2.5x6ft Star Flex replacement graphic banner only @ ₹400"
+      }
+    },
+    "specifications": {
+      "Product Category": "Roll-Up Standie Display",
+      "Display Size": "2.5 Feet (Width) x 6 Feet (Height) / 30 x 72 inches",
+      "Banner Area": "15 Sq. Ft.",
+      "Base Mechanism": "Anodized Silver Aluminium Roll-Up Casing with fold-out feet",
+      "Printing Media": "Star Flex / Non-Tearable Matte Film / Normal Flex",
+      "Accessories Included": "3-Piece Bungee Support Rod & Padded Carry Bag",
+      "Production Time": "24 Hours from design approval"
+    },
+    "ourSpecialization": [
+      "Ultra-portable self-standing pull-up banner display",
+      "Vivid high-resolution solvent/eco-solvent printing",
+      "Sturdy aluminium frame engineered for frequent setup & travel",
+      "Protective zippered carry case included with every complete stand"
+    ]
+  },
+  {
+    "_id": "6ad201bd3234a1276a4d6c47",
+    "id": "STD-002",
+    "code": "STD-002",
+    "categoryId": "flex-board",
+    "subCategory": "STANDIE",
+    "name": "Roll-Up Standie - 3 × 6 Ft (Wide Aluminium Base)",
+    "slug": "rollup-standie-3x6",
+    "isStandie": true,
+    "image": "/products/standie/rollup-standie.jpg",
+    "standeeSize": "3 x 6 Ft",
+    "standType": "Standard Aluminium Roll-Up Stand",
+    "widthFt": 3,
+    "heightFt": 6,
+    "basePrice": 1050,
+    "description": "Wide 3ft x 6ft (36\" x 72\") roll-up banner standee with reinforced aluminium base, heavy-duty support pole, premium vibrant graphic, and carry bag.",
+    "minQuantity": 1,
+    "quantityStep": 1,
+    "unitName": "Standie(s)",
+    "productionTime": "24 Hours",
+    "variantCombinations": [
+      "Star Flex Print with Stand - ₹1,050",
+      "Non-Tearable Matte Film with Stand - ₹1,400",
+      "Normal Frontlit Flex with Stand - ₹850",
+      "Only Roll-up Stand Mechanism (No Print) - ₹550",
+      "Only Replacement Banner Print (Star Flex) - ₹500"
+    ],
+    "variantDetails": {
+      "Star Flex Print with Stand - ₹1,050": {
+        "code": "STD-201",
+        "basePrice": 1050,
+        "mediaType": "Star Flex",
+        "description": "3x6ft Roll-up Standee complete unit with Star Flex printing @ ₹1,050"
+      },
+      "Non-Tearable Matte Film with Stand - ₹1,400": {
+        "code": "STD-202",
+        "basePrice": 1400,
+        "mediaType": "Non-Tearable Matte Film",
+        "description": "3x6ft Roll-up Standee complete unit with premium Non-Tearable matte synthetic media @ ₹1,400"
+      },
+      "Normal Frontlit Flex with Stand - ₹850": {
+        "code": "STD-203",
+        "basePrice": 850,
+        "mediaType": "Normal Flex",
+        "description": "3x6ft Roll-up Standee complete unit with standard frontlit normal flex @ ₹850"
+      },
+      "Only Roll-up Stand Mechanism (No Print) - ₹550": {
+        "code": "STD-204",
+        "basePrice": 550,
+        "mediaType": "No Print (Hardware Only)",
+        "description": "3x6ft Aluminium Roll-up Stand mechanism with support rod & carry bag @ ₹550"
+      },
+      "Only Replacement Banner Print (Star Flex) - ₹500": {
+        "code": "STD-205",
+        "basePrice": 500,
+        "mediaType": "Star Flex Print Only",
+        "description": "3x6ft Star Flex replacement graphic banner only @ ₹500"
+      }
+    },
+    "specifications": {
+      "Product Category": "Roll-Up Standie Display",
+      "Display Size": "3 Feet (Width) x 6 Feet (Height) / 36 x 72 inches",
+      "Banner Area": "18 Sq. Ft.",
+      "Base Mechanism": "Heavy-Duty Anodized Silver Aluminium Roll-Up Casing",
+      "Printing Media": "Star Flex / Non-Tearable Matte Film / Normal Flex",
+      "Accessories Included": "Reinforced Bungee Pole & Zippered Carrying Bag",
+      "Production Time": "24 Hours from design approval"
+    },
+    "ourSpecialization": [
+      "Wide format visual impact for seminars, conventions & retail",
+      "Reinforced heavy spring roll-up mechanism",
+      "Scratch & fade resistant UV digital printing",
+      "Quick 30-second tool-free setup"
+    ]
+  },
+  {
+    "_id": "6ad201bd3234a1276a4d6c48",
+    "id": "STD-003",
+    "code": "STD-003",
+    "categoryId": "flex-board",
+    "subCategory": "STANDIE",
+    "name": "Roll-Up Standie - 2 × 5 Ft (Compact)",
+    "slug": "rollup-standie-2x5",
+    "isStandie": true,
+    "image": "/products/standie/rollup-standie.jpg",
+    "standeeSize": "2 x 5 Ft",
+    "standType": "Standard Aluminium Roll-Up Stand",
+    "widthFt": 2,
+    "heightFt": 5,
+    "basePrice": 700,
+    "description": "Compact 2ft x 5ft (24\" x 60\") roll-up banner standee for retail storefronts, promotional kiosks, mall activations, and receptions.",
+    "minQuantity": 1,
+    "quantityStep": 1,
+    "unitName": "Standie(s)",
+    "productionTime": "24 Hours",
+    "variantCombinations": [
+      "Star Flex Print with Stand - ₹700",
+      "Non-Tearable Matte Film with Stand - ₹950",
+      "Normal Frontlit Flex with Stand - ₹600",
+      "Only Roll-up Stand Mechanism (No Print) - ₹400",
+      "Only Replacement Banner Print (Star Flex) - ₹300"
+    ],
+    "variantDetails": {
+      "Star Flex Print with Stand - ₹700": {
+        "code": "STD-301",
+        "basePrice": 700,
+        "mediaType": "Star Flex",
+        "description": "2x5ft Roll-up Standee complete unit with Star Flex printing @ ₹700"
+      },
+      "Non-Tearable Matte Film with Stand - ₹950": {
+        "code": "STD-302",
+        "basePrice": 950,
+        "mediaType": "Non-Tearable Matte Film",
+        "description": "2x5ft Roll-up Standee complete unit with premium Non-Tearable matte synthetic media @ ₹950"
+      },
+      "Normal Frontlit Flex with Stand - ₹600": {
+        "code": "STD-303",
+        "basePrice": 600,
+        "mediaType": "Normal Flex",
+        "description": "2x5ft Roll-up Standee complete unit with standard frontlit normal flex @ ₹600"
+      },
+      "Only Roll-up Stand Mechanism (No Print) - ₹400": {
+        "code": "STD-304",
+        "basePrice": 400,
+        "mediaType": "No Print (Hardware Only)",
+        "description": "2x5ft Aluminium Roll-up Stand mechanism with support rod & carry bag @ ₹400"
+      },
+      "Only Replacement Banner Print (Star Flex) - ₹300": {
+        "code": "STD-305",
+        "basePrice": 300,
+        "mediaType": "Star Flex Print Only",
+        "description": "2x5ft Star Flex replacement graphic banner only @ ₹300"
+      }
+    },
+    "specifications": {
+      "Product Category": "Roll-Up Standie Display",
+      "Display Size": "2 Feet (Width) x 5 Feet (Height) / 24 x 60 inches",
+      "Banner Area": "10 Sq. Ft.",
+      "Base Mechanism": "Compact Aluminium Roll-Up Casing with dual swing feet",
+      "Printing Media": "Star Flex / Non-Tearable Matte Film / Normal Flex",
+      "Accessories Included": "Support Pole & Nylon Carry Bag",
+      "Production Time": "24 Hours from design approval"
+    },
+    "ourSpecialization": [
+      "Compact footprint ideal for tight spaces & retail points of sale",
+      "Lightweight (under 2 kg) for effortless transit",
+      "Vibrant high-contrast graphics",
+      "Long-lasting internal tension spring"
+    ]
+  },
+  {
+    "_id": "6ad201bd3234a1276a4d6c49",
+    "id": "STD-004",
+    "code": "STD-004",
+    "categoryId": "flex-board",
+    "subCategory": "STANDIE",
+    "name": "Luxury Broad-Base Standie - 2.5 × 6 Ft (Teardrop Chrome)",
+    "slug": "luxury-broad-base-standie",
+    "isStandie": true,
+    "image": "/products/standie/luxury-standie.jpg",
+    "standeeSize": "2.5 x 6 Ft",
+    "standType": "Luxury Teardrop Broad Base Stand",
+    "widthFt": 2.5,
+    "heightFt": 6,
+    "basePrice": 1450,
+    "description": "Executive broad-base teardrop standee (2.5ft x 6ft) with heavy chrome-plated endcaps, self-standing mechanism without swing-out feet, and padded carry bag.",
+    "minQuantity": 1,
+    "quantityStep": 1,
+    "unitName": "Standie(s)",
+    "productionTime": "24-48 Hours",
+    "variantCombinations": [
+      "Star Flex Print + Luxury Stand - ₹1,450",
+      "Non-Tearable Matte Film + Luxury Stand - ₹1,750",
+      "Satin Fabric Print + Luxury Stand - ₹2,100",
+      "Only Luxury Stand Mechanism (No Print) - ₹950"
+    ],
+    "variantDetails": {
+      "Star Flex Print + Luxury Stand - ₹1,450": {
+        "code": "STD-401",
+        "basePrice": 1450,
+        "mediaType": "Star Flex",
+        "description": "2.5x6ft Luxury Broad-Base Standee with Star Flex print @ ₹1,450"
+      },
+      "Non-Tearable Matte Film + Luxury Stand - ₹1,750": {
+        "code": "STD-402",
+        "basePrice": 1750,
+        "mediaType": "Non-Tearable Matte Film",
+        "description": "2.5x6ft Luxury Broad-Base Standee with Non-Tearable Matte Film @ ₹1,750"
+      },
+      "Satin Fabric Print + Luxury Stand - ₹2,100": {
+        "code": "STD-403",
+        "basePrice": 2100,
+        "mediaType": "Satin Fabric",
+        "description": "2.5x6ft Luxury Broad-Base Standee with seamless Satin Fabric print @ ₹2,100"
+      },
+      "Only Luxury Stand Mechanism (No Print) - ₹950": {
+        "code": "STD-404",
+        "basePrice": 950,
+        "mediaType": "No Print (Hardware Only)",
+        "description": "2.5x6ft Executive Teardrop Chrome Base Stand mechanism only @ ₹950"
+      }
+    },
+    "specifications": {
+      "Product Category": "Luxury Roll-Up Standie Display",
+      "Display Size": "2.5 Feet (Width) x 6 Feet (Height) / 30 x 72 inches",
+      "Banner Area": "15 Sq. Ft.",
+      "Base Mechanism": "Heavy Teardrop Broad Aluminium Base with Mirror Chrome End Caps",
+      "Stability": "Self-standing solid weight base without unsightly protruding feet",
+      "Printing Media": "Non-Tearable Matte Film / Star Flex / Satin Fabric",
+      "Accessories Included": "Heavy-duty Telescopic Rod & Deluxe Padded Travel Case",
+      "Production Time": "24-48 Hours"
+    },
+    "ourSpecialization": [
+      "Executive aesthetic for premium expos, boardroom lobbies & VIP galleries",
+      "Ultra-stable low center of gravity broad base",
+      "Mirror-finish chrome accents",
+      "Deluxe high-density padded carry bag"
+    ]
+  },
+  {
+    "_id": "6ad201bd3234a1276a4d6c4a",
+    "id": "STD-005",
+    "code": "STD-005",
+    "categoryId": "flex-board",
+    "subCategory": "STANDIE",
+    "name": "Custom Roll-Up Standie & Frame Calculator",
+    "slug": "custom-standie-calculator",
+    "isStandie": true,
+    "image": "/products/standie/rollup-standie.jpg",
+    "standeeSize": "Custom / 2.5 x 6 Ft",
+    "standType": "Interactive Configurator",
+    "widthFt": 2.5,
+    "heightFt": 6,
+    "basePrice": 850,
+    "description": "Interactive Standee Calculator: Select or enter any custom size (2x5ft, 2.5x6ft, 3x6ft, 4x6ft), Stand hardware, Media grades (Star Flex, Matte Film, Satin), lamination options, instant pricing & official PDF quotation generator.",
+    "minQuantity": 1,
+    "quantityStep": 1,
+    "unitName": "Standie(s)",
+    "productionTime": "24 Hours",
+    "variantCombinations": [
+      "Standard Aluminium Stand + Star Flex - ₹850",
+      "Standard Aluminium Stand + Non-Tearable Matte - ₹1,150",
+      "Luxury Teardrop Stand + Non-Tearable Matte - ₹1,750",
+      "X-Banner Stand + Star Flex - ₹650",
+      "Custom Standee Setup"
+    ],
+    "variantDetails": {
+      "Standard Aluminium Stand + Star Flex - ₹850": {
+        "code": "STD-501",
+        "basePrice": 850,
+        "mediaType": "Star Flex",
+        "description": "Customizable 2.5x6ft Standard Aluminium Roll-Up Standee with Star Flex"
+      },
+      "Standard Aluminium Stand + Non-Tearable Matte - ₹1,150": {
+        "code": "STD-502",
+        "basePrice": 1150,
+        "mediaType": "Non-Tearable Matte Film",
+        "description": "Customizable 2.5x6ft Standard Aluminium Roll-Up Standee with Non-Tearable Matte Film"
+      },
+      "Luxury Teardrop Stand + Non-Tearable Matte - ₹1,750": {
+        "code": "STD-503",
+        "basePrice": 1750,
+        "mediaType": "Non-Tearable Matte Film",
+        "description": "Customizable 2.5x6ft Luxury Teardrop Broad Base Standee with Non-Tearable Matte Film"
+      },
+      "X-Banner Stand + Star Flex - ₹650": {
+        "code": "STD-504",
+        "basePrice": 650,
+        "mediaType": "Star Flex",
+        "description": "Customizable 2x5ft or 2.5x6ft X-Banner Stand with Star Flex"
+      },
+      "Custom Standee Setup": {
+        "code": "STD-505",
+        "basePrice": 850,
+        "mediaType": "Custom",
+        "description": "Fully custom size, hardware and media Standee configuration"
+      }
+    },
+    "specifications": {
+      "Product Category": "Custom Roll-Up Standie Calculator",
+      "Supported Sizes": "2x5 Ft, 2.5x6 Ft, 3x6 Ft, 4x6 Ft & Custom Dimensions",
+      "Stand Types": "Standard Roll-up (₹450), Luxury Teardrop (₹950), X-Stand (₹300), Banner Only (₹0)",
+      "Media Options": "Star Flex (₹25/sqft), Normal Flex (₹15/sqft), Non-Tearable Matte (₹45/sqft), Satin Fabric (₹55/sqft)",
+      "Lamination Options": "None (₹0), Matte Lamination (+₹5/sqft), Gloss Lamination (+₹5/sqft)",
+      "Production Time": "24 Hours from design approval"
+    },
+    "ourSpecialization": [
+      "Instant real-time Standee cost & area estimation",
+      "Comprehensive hardware and media compatibility",
+      "Direct PDF quotation download with one click",
+      "Seamless integration into the master Quote cart"
+    ]
+  },
+  {
     "_id": "6a8d3f3e181ae861f1c381cf",
     "id": "LH-001",
     "code": "LH-1",
