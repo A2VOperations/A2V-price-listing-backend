@@ -59,6 +59,11 @@ async function seedInitialData() {
               }
               await Product.create(toInsert);
               console.log(`📦 Auto-synced product: ${prod.id} (${prod.name})`);
+            } else if (prod.id === "STD-001" || prod.isStandie) {
+              const toUpdate = { ...prod };
+              delete toUpdate._id;
+              await Product.updateOne({ id: prod.id }, { $set: toUpdate });
+              console.log(`📦 Updated product in MongoDB: ${prod.id} (${prod.name})`);
             }
           }
         }
