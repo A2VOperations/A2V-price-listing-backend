@@ -23,27 +23,21 @@ async function syncProduct() {
     const productsPath = path.join(__dirname, "..", "data", "products.json");
     const products = JSON.parse(fs.readFileSync(productsPath, "utf8"));
 
-    const std002 = products.find((p) => p.id === "STD-002");
-    if (!std002) {
-      console.error("STD-002 not found in backend/data/products.json");
-      process.exit(1);
+    const standees = products.filter((p) => p.subCategory === "STANDIE");
+    for (const standee of standees) {
+      const toUpdate = { ...standee };
+      delete toUpdate._id;
+      const result = await Product.findOneAndUpdate(
+        { id: standee.id },
+        { $set: toUpdate },
+        { new: true, upsert: true }
+      );
+      console.log(`✅ Successfully updated ${standee.id} (${standee.name}) in MongoDB!`);
     }
 
-    const toUpdate = { ...std002 };
-    delete toUpdate._id;
-
-    const result = await Product.findOneAndUpdate(
-      { id: "STD-002" },
-      { $set: toUpdate },
-      { new: true, upsert: true }
-    );
-
-    console.log("✅ Successfully updated STD-002 in MongoDB database!");
-    console.log("Name:", result.name);
-    console.log("Fixed Widths:", result.fixedWidths);
-    console.log("Standee Size:", result.standeeSize);
-    console.log("Base Price:", result.basePrice);
-    console.log("Variants Count:", result.variantCombinations?.length);
+    // Clean up old STD-003
+    await Product.deleteOne({ id: "STD-003" });
+    console.log("✅ Successfully removed legacy STD-003 from MongoDB!");
 
     await mongoose.disconnect();
     console.log("Disconnected from MongoDB.");

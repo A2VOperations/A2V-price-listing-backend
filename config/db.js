@@ -9,17 +9,27 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export async function connectDB() {
-  const mongoURI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/a2v_prints";
+  const cloudURI = process.env.MONGODB_URI;
+  const localURI = "mongodb://127.0.0.1:27017/a2v_prints";
+
+  if (cloudURI) {
+    try {
+      const conn = await mongoose.connect(cloudURI, { serverSelectionTimeoutMS: 3000 });
+      console.log(`✅ MongoDB Connected: ${conn.connection.host}/${conn.connection.name}`);
+      await seedInitialData();
+      return;
+    } catch (error) {
+      console.warn(`⚠️ Cloud MongoDB Error (${error.message}). Falling back to local MongoDB...`);
+    }
+  }
 
   try {
-    const conn = await mongoose.connect(mongoURI);
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}/${conn.connection.name}`);
-
-    // Auto-seed initial data if collections are empty
+    const conn = await mongoose.connect(localURI, { serverSelectionTimeoutMS: 3000 });
+    console.log(`✅ Local MongoDB Connected: ${conn.connection.host}/${conn.connection.name}`);
     await seedInitialData();
-  } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
-    console.log("⚠️ Continuing with local/fallback operations.");
+  } catch (localError) {
+    console.error(`❌ Local MongoDB Connection Error: ${localError.message}`);
+    console.log("⚠️ Continuing with local JSON file fallback operations.");
   }
 }
 
@@ -66,6 +76,8 @@ async function seedInitialData() {
               console.log(`📦 Updated product in MongoDB: ${prod.id} (${prod.name})`);
             }
           }
+          // Remove legacy STD-003 now that Iron Frame Standee is renumbered to STD-002
+          await Product.deleteOne({ id: "STD-003" });
         }
       }
     }
