@@ -47,6 +47,15 @@ const productSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    quantityType: {
+      type: String,
+      enum: ["incremental", "select"],
+      default: "incremental",
+    },
+    fixedQuantities: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
     minQuantity: {
       type: Number,
       default: 1000,

@@ -139,6 +139,8 @@ export async function createProduct(req, res) {
       ...body,
       id,
       slug,
+      quantityType: body.quantityType || "incremental",
+      fixedQuantities: Array.isArray(body.fixedQuantities) ? body.fixedQuantities : [],
       minQuantity: Number(body.minQuantity) || 1000,
       quantityStep: Number(body.quantityStep) || 1000,
       basePrice: Number(body.basePrice) || 0,
