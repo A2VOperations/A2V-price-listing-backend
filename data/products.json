@@ -4659,63 +4659,77 @@
     "isStandie": true,
     "isHutStandie": true,
     "image": "/products/standie/luxury-standie.jpg",
-    "standeeSize": "2.5 × 4 Ft",
+    "standeeSize": "2 × 3 Ft",
     "standType": "A-Frame Standee Hut (Iron 3kg / 5kg or Wooden)",
-    "widthFt": 2.5,
-    "heightFt": 4,
-    "basePrice": 1510,
-    "description": "Double-sided A-Frame Tent Standee Hut calculator: customizable height & width, fixed presets (2.5×4 ft, 3×4 ft, 2×3 ft, 3×5 ft), +0.5 ft bottom legs added, 3 kg Iron Pipe (₹35/running ft), 5 kg Iron Pipe (₹50/running ft), Wooden frame (₹20/running ft), Top Apex Hinges (2 pcs default @ ₹15/pc with option to add more & edit rate), and Star Flex (₹25/sqft) or Normal Flex (₹15/sqft for wooden).",
+    "widthFt": 2,
+    "heightFt": 3,
+    "basePrice": 1230,
+    "description": "Double-sided A-Frame Tent Standee Hut calculator: customizable height & width, standard presets (2×3 ft, 2.5×3 ft, 3×4 ft, 3×5 ft, 3×6 ft, 3.5×5 ft, 3.5×6 ft), +1 ft bottom legs added, 3 kg Iron Pipe (₹35/running ft), 5 kg Iron Pipe (₹50/running ft), Wooden frame (₹20/running ft), Top Apex Hinges (2 pcs default @ ₹15/pc with option to add more & edit rate), and Star Flex (₹30/sqft) or Normal Flex (₹20/sqft).",
     "minQuantity": 1,
     "quantityStep": 1,
     "unitName": "Standee(s)",
     "productionTime": "24-48 Hours",
     "variantCombinations": [
-      "2.5 × 4 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,510",
-      "3 × 4 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,680",
-      "2 × 3 Ft Compact Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,100",
-      "3 × 5 Ft Tall Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,970",
-      "2.5 × 4 Ft Wooden Hut Standee (Wooden + Normal Flex + 2 Hinges) - ₹890"
+      "2 × 3 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,230",
+      "2.5 × 3 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,390",
+      "3 × 4 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,870",
+      "3 × 5 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹2,190",
+      "3 × 6 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹2,510",
+      "3.5 × 5 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹2,410",
+      "3.5 × 6 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹2,760"
     ],
     "variantDetails": {
-      "2.5 × 4 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,510": {
+      "2 × 3 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,230": {
         "code": "STD-301",
-        "basePrice": 1510,
+        "basePrice": 1230,
         "mediaType": "Star Flex (Double-Sided)",
-        "description": "2.5×4 Ft Standee Hut with 3 kg Iron pipe frame (28 running ft @ ₹35 = ₹980), +0.5 ft legs added (4.5 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 2.5×4 ft double-sided Star Flex (20 sqft @ ₹25 = ₹500) @ ₹1,510"
+        "description": "2×3 Ft Standee Hut with 3 kg Iron pipe frame (24 running ft @ ₹35 = ₹840), +1 ft legs added (4 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 2×3 ft double-sided Star Flex (12 sqft @ ₹30 = ₹360) @ ₹1,230"
       },
-      "3 × 4 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,680": {
+      "2.5 × 3 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,390": {
         "code": "STD-302",
-        "basePrice": 1680,
+        "basePrice": 1390,
         "mediaType": "Star Flex (Double-Sided)",
-        "description": "3×4 Ft Standee Hut with 3 kg Iron pipe frame (30 running ft @ ₹35 = ₹1,050), +0.5 ft legs added (4.5 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 3×4 ft double-sided Star Flex (24 sqft @ ₹25 = ₹600) @ ₹1,680"
+        "description": "2.5×3 Ft Standee Hut with 3 kg Iron pipe frame (26 running ft @ ₹35 = ₹910), +1 ft legs added (4 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 2.5×3 ft double-sided Star Flex (15 sqft @ ₹30 = ₹450) @ ₹1,390"
       },
-      "2 × 3 Ft Compact Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,100": {
+      "3 × 4 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,870": {
         "code": "STD-303",
-        "basePrice": 1100,
+        "basePrice": 1870,
         "mediaType": "Star Flex (Double-Sided)",
-        "description": "2×3 Ft Compact Standee Hut with 3 kg Iron pipe frame (22 running ft @ ₹35 = ₹700), +0.5 ft legs added (3.5 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 2×3 ft double-sided Star Flex (12 sqft @ ₹25 = ₹300) @ ₹1,100"
+        "description": "3×4 Ft Standee Hut with 3 kg Iron pipe frame (32 running ft @ ₹35 = ₹1,120), +1 ft legs added (5 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 3×4 ft double-sided Star Flex (24 sqft @ ₹30 = ₹720) @ ₹1,870"
       },
-      "3 × 5 Ft Tall Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹1,970": {
+      "3 × 5 Ft Tall Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹2,190": {
         "code": "STD-304",
-        "basePrice": 1970,
+        "basePrice": 2190,
         "mediaType": "Star Flex (Double-Sided)",
-        "description": "3×5 Ft Tall Standee Hut with 3 kg Iron pipe frame (34 running ft @ ₹35 = ₹1,190), +0.5 ft legs added (5.5 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 3×5 ft double-sided Star Flex (30 sqft @ ₹25 = ₹750) @ ₹1,970"
+        "description": "3×5 Ft Tall Standee Hut with 3 kg Iron pipe frame (36 running ft @ ₹35 = ₹1,260), +1 ft legs added (6 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 3×5 ft double-sided Star Flex (30 sqft @ ₹30 = ₹900) @ ₹2,190"
       },
-      "2.5 × 4 Ft Wooden Hut Standee (Wooden + Normal Flex + 2 Hinges) - ₹890": {
+      "3 × 6 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹2,510": {
         "code": "STD-305",
-        "basePrice": 890,
-        "mediaType": "Normal Flex (Double-Sided)",
-        "description": "2.5×4 Ft Standee Hut with Wooden timber frame (28 running ft @ ₹20 = ₹560), +0.5 ft legs added (4.5 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 2.5×4 ft double-sided Normal Flex (20 sqft @ ₹15 = ₹300) @ ₹890"
+        "basePrice": 2510,
+        "mediaType": "Star Flex (Double-Sided)",
+        "description": "3×6 Ft Standee Hut with 3 kg Iron pipe frame (40 running ft @ ₹35 = ₹1,400), +1 ft legs added (7 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 3×6 ft double-sided Star Flex (36 sqft @ ₹30 = ₹1,080) @ ₹2,510"
+      },
+      "3.5 × 5 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹2,410": {
+        "code": "STD-306",
+        "basePrice": 2410,
+        "mediaType": "Star Flex (Double-Sided)",
+        "description": "3.5×5 Ft Standee Hut with 3 kg Iron pipe frame (38 running ft @ ₹35 = ₹1,330), +1 ft legs added (6 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 3.5×5 ft double-sided Star Flex (35 sqft @ ₹30 = ₹1,050) @ ₹2,410"
+      },
+      "3.5 × 6 Ft A-Frame Hut Standee (3kg Iron + Star Flex + 2 Hinges) - ₹2,760": {
+        "code": "STD-307",
+        "basePrice": 2760,
+        "mediaType": "Star Flex (Double-Sided)",
+        "description": "3.5×6 Ft Standee Hut with 3 kg Iron pipe frame (42 running ft @ ₹35 = ₹1,470), +1 ft legs added (7 ft total frame height), 2 apex hinges (@ ₹15 = ₹30), and 3.5×6 ft double-sided Star Flex (42 sqft @ ₹30 = ₹1,260) @ ₹2,760"
       }
     },
     "specifications": {
       "Product Category": "A-Frame Standee Hut Display Calculator",
-      "Standard Preset Sizes": "2.5×4 Ft, 3×4 Ft, 2×3 Ft, 3×5 Ft",
-      "Leg Ground Clearance": "0.5 Ft (6 inches) at bottom of standee added (+ not minus)",
+      "Standard Preset Sizes": "2×3 Ft, 2.5×3 Ft, 3×4 Ft, 3×5 Ft, 3×6 Ft, 3.5×5 Ft, 3.5×6 Ft",
+      "Leg Ground Clearance": "1 Ft (12 inches) at bottom of standee added (+ not minus)",
       "Top Apex Hinges": "2 Pcs Standard @ ₹15/pc (Configurable Quantity & Price)",
-      "Flex Display Area": "Full Banner Height (e.g. 4 ft) with +0.5 ft bottom legs added to frame (Mounted Double Sided / Tent)",
+      "Flex Display Area": "Full Banner Height (e.g. 3 ft) with +1 ft bottom legs added to frame (Mounted Double Sided / Tent)",
       "Frame Options": "3 kg Iron Pipe (₹35/ft), 5 kg Iron Pipe (₹50/ft), Wooden Frame (₹20/ft)",
-      "Media Compatibility": "Iron Frame: Star Flex Only (₹25/sqft); Wooden Frame: Star Flex (₹25/sqft) or Normal Flex (₹15/sqft)",
+      "Media Compatibility": "Star Flex (₹30/sqft) or Normal Flex (₹20/sqft); 3kg/5kg Iron Frame & Wooden Frame supported",
       "Editable Pricing": "Running feet, frame rate per ft, hinge quantity, hinge rate, and flex rate per sqft can be directly edited",
       "Production Time": "24 to 48 Hours"
     },
@@ -4723,8 +4737,8 @@
       "Heavy-duty A-Frame tent geometry with 2 top apex folding hinges and safety stay",
       "Option to add more hinges for wider or heavier custom fabrication",
       "Support for 3kg light iron, 5kg heavy windproof iron, and wooden frames",
-      "0.5 ft ground clearance to protect flex graphics from dirt and water splash",
-      "Premium glossy Star Flex for iron and Star/Normal flex for wooden frames",
+      "1 ft ground clearance to protect flex graphics from dirt and water splash",
+      "Premium glossy Star Flex (₹30/sqft) and Normal Flex (₹20/sqft) media support",
       "Direct live pricing calculator with custom dimensions and editable rates"
     ]
   },
