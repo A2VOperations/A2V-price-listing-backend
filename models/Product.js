@@ -64,10 +64,6 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 1000,
     },
-    productionTime: {
-      type: String,
-      default: "3-7 Days",
-    },
     basePrice: {
       type: Number,
       default: 0,
