@@ -17,7 +17,7 @@ async function syncProduct() {
 
   try {
     console.log("Connecting to MongoDB...");
-    await mongoose.connect(mongoURI);
+    await mongoose.connect(mongoURI, { dbName: "A2V-Pricing" });
     console.log("Connected to MongoDB successfully!");
 
     const productsPath = path.join(__dirname, "..", "data", "products.json");

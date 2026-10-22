@@ -1,132 +1,92 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import Product from "../models/Product.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const productsFilePath = path.join(__dirname, "..", "data", "products.json");
-const frontendProductsPath = path.join(__dirname, "..", "..", "frontend", "public", "data", "products.json");
-const frontendSrcProductsPath = path.join(__dirname, "..", "..", "frontend", "src", "data", "products.json");
-
-// Helper for fallback JSON storage
-function readProductsFromFile() {
-  try {
-    if (fs.existsSync(productsFilePath)) {
-      return JSON.parse(fs.readFileSync(productsFilePath, "utf8"));
-    }
-    if (fs.existsSync(frontendProductsPath)) {
-      return JSON.parse(fs.readFileSync(frontendProductsPath, "utf8"));
-    }
-  } catch (err) {
-    console.error("Error reading products JSON:", err);
+function ensureDbConnected(res) {
+  if (mongoose.connection.readyState !== 1) {
+    res.status(503).json({
+      success: false,
+      message: "MongoDB connection is not active. Database is required.",
+    });
+    return false;
   }
-  return [];
-}
-
-function syncProductsToFile(products) {
-  try {
-    const json = JSON.stringify(products, null, 2);
-    fs.writeFileSync(productsFilePath, json, "utf8");
-    if (fs.existsSync(path.dirname(frontendProductsPath))) {
-      fs.writeFileSync(frontendProductsPath, json, "utf8");
-    }
-    if (fs.existsSync(path.dirname(frontendSrcProductsPath))) {
-      fs.writeFileSync(frontendSrcProductsPath, json, "utf8");
-    }
-  } catch (err) {
-    console.warn("Could not sync products to file:", err.message);
-  }
+  return true;
 }
 
 // GET /api/products
 export async function getProducts(req, res) {
   try {
+    if (!ensureDbConnected(res)) return;
+
     const { categoryId, subCategory, search } = req.query;
+    const query = {};
 
-    if (mongoose.connection.readyState === 1) {
-      const query = {};
-      if (categoryId) query.categoryId = categoryId;
-      if (subCategory) query.subCategory = subCategory;
+    if (categoryId) query.categoryId = categoryId;
+    if (subCategory) query.subCategory = subCategory;
 
-      if (search) {
-        const regex = new RegExp(search.trim(), "i");
-        query.$or = [
-          { name: regex },
-          { code: regex },
-          { categoryId: regex },
-          { subCategory: regex },
-          { description: regex },
-        ];
-      }
-
-      const products = await Product.find(query).sort({ createdAt: -1 }).lean();
-      return res.json({ success: true, data: products });
-    }
-
-    // Fallback if DB not ready
-    let products = readProductsFromFile();
-    if (categoryId) {
-      products = products.filter((p) => p.categoryId === categoryId);
-    }
-    if (subCategory) {
-      products = products.filter((p) => p.subCategory === subCategory);
-    }
     if (search) {
-      const q = search.toLowerCase().trim();
-      products = products.filter(
-        (p) =>
-          (p.name && p.name.toLowerCase().includes(q)) ||
-          (p.code && p.code.toLowerCase().includes(q)) ||
-          (p.categoryId && p.categoryId.toLowerCase().includes(q)) ||
-          (p.subCategory && p.subCategory.toLowerCase().includes(q)) ||
-          (p.description && p.description.toLowerCase().includes(q))
-      );
+      const regex = new RegExp(search.trim(), "i");
+      query.$or = [
+        { name: regex },
+        { code: regex },
+        { categoryId: regex },
+        { subCategory: regex },
+        { description: regex },
+      ];
     }
-    return res.json({ success: true, data: products });
+
+    const products = await Product.find(query).sort({ createdAt: -1 }).lean();
+    return res.json({ success: true, count: products.length, data: products });
   } catch (error) {
-    console.error("Get products error:", error);
-    const products = readProductsFromFile();
-    return res.json({ success: true, data: products });
+    console.error("MongoDB Get products error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch products from MongoDB.",
+    });
   }
 }
 
 // GET /api/products/:slugOrId
 export async function getProductBySlug(req, res) {
   try {
+    if (!ensureDbConnected(res)) return;
+
     const { slugOrId } = req.params;
+    const escaped = slugOrId.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+    const regex = new RegExp(`^${escaped}$`, "i");
 
-    if (mongoose.connection.readyState === 1) {
-      const product = await Product.findOne({
-        $or: [{ slug: slugOrId }, { id: slugOrId }, { code: slugOrId }],
-      }).lean();
+    const alternateSlug = slugOrId.includes("standee")
+      ? slugOrId.replace(/standee/g, "standie")
+      : slugOrId.includes("standie")
+        ? slugOrId.replace(/standie/g, "standee")
+        : null;
 
-      if (!product) {
-        return res.status(404).json({ success: false, message: "Product not found." });
-      }
-      return res.json({ success: true, data: product });
+    const queryOr = [{ slug: regex }, { id: regex }, { code: regex }];
+    if (alternateSlug) {
+      const altEscaped = alternateSlug.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+      queryOr.push({ slug: new RegExp(`^${altEscaped}$`, "i") });
     }
 
-    // Fallback
-    const products = readProductsFromFile();
-    const product = products.find(
-      (p) => p.slug === slugOrId || p.id === slugOrId || p.code === slugOrId
-    );
+    const product = await Product.findOne({ $or: queryOr }).lean();
 
     if (!product) {
-      return res.status(404).json({ success: false, message: "Product not found." });
+      return res.status(404).json({ success: false, message: "Product not found in MongoDB." });
     }
+
     return res.json({ success: true, data: product });
   } catch (error) {
-    console.error("Get product error:", error);
-    return res.status(500).json({ success: false, message: error.message || "Failed to fetch product." });
+    console.error("MongoDB Get product error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch product from MongoDB.",
+    });
   }
 }
 
 // POST /api/products
 export async function createProduct(req, res) {
   try {
+    if (!ensureDbConnected(res)) return;
+
     const body = req.body || {};
     if (!body.name) {
       return res.status(400).json({ success: false, message: "Product name is required." });
@@ -146,84 +106,65 @@ export async function createProduct(req, res) {
       basePrice: Number(body.basePrice) || 0,
     };
 
-    if (mongoose.connection.readyState === 1) {
-      const created = await Product.create(newProductData);
-      Product.find().lean().then(syncProductsToFile).catch(() => {});
-      return res.status(201).json({ success: true, data: created });
-    }
-
-    // Fallback
-    const products = readProductsFromFile();
-    products.push(newProductData);
-    syncProductsToFile(products);
-    return res.status(201).json({ success: true, data: newProductData });
+    const created = await Product.create(newProductData);
+    console.log(`✅ [MongoDB] Product created: ${created.id} (${created.name})`);
+    return res.status(201).json({ success: true, data: created });
   } catch (error) {
-    console.error("Create product error:", error);
-    return res.status(500).json({ success: false, message: error.message || "Failed to create product." });
+    console.error("MongoDB Create product error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create product in MongoDB.",
+    });
   }
 }
 
 // PUT /api/products/:id
 export async function updateProduct(req, res) {
   try {
+    if (!ensureDbConnected(res)) return;
+
     const { id } = req.params;
 
-    if (mongoose.connection.readyState === 1) {
-      const updated = await Product.findOneAndUpdate(
-        { $or: [{ id }, { slug: id }] },
-        { $set: req.body },
-        { new: true }
-      ).lean();
+    const updated = await Product.findOneAndUpdate(
+      { $or: [{ id }, { slug: id }] },
+      { $set: req.body },
+      { returnDocument: "after" }
+    ).lean();
 
-      if (!updated) {
-        return res.status(404).json({ success: false, message: "Product not found." });
-      }
-
-      Product.find().lean().then(syncProductsToFile).catch(() => {});
-      return res.json({ success: true, data: updated });
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Product not found in MongoDB." });
     }
 
-    // Fallback
-    const products = readProductsFromFile();
-    const index = products.findIndex((p) => p.id === id || p.slug === id);
-    if (index === -1) {
-      return res.status(404).json({ success: false, message: "Product not found." });
-    }
-    products[index] = { ...products[index], ...req.body };
-    syncProductsToFile(products);
-    return res.json({ success: true, data: products[index] });
+    console.log(`✅ [MongoDB] Product updated: ${updated.id} (${updated.name})`);
+    return res.json({ success: true, data: updated });
   } catch (error) {
-    console.error("Update product error:", error);
-    return res.status(500).json({ success: false, message: error.message || "Failed to update product." });
+    console.error("MongoDB Update product error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update product in MongoDB.",
+    });
   }
 }
 
 // DELETE /api/products/:id
 export async function deleteProduct(req, res) {
   try {
+    if (!ensureDbConnected(res)) return;
+
     const { id } = req.params;
 
-    if (mongoose.connection.readyState === 1) {
-      const deleted = await Product.findOneAndDelete({ $or: [{ id }, { slug: id }] });
-      if (!deleted) {
-        return res.status(404).json({ success: false, message: "Product not found." });
-      }
-
-      Product.find().lean().then(syncProductsToFile).catch(() => {});
-      return res.json({ success: true, message: "Product deleted successfully." });
+    const deleted = await Product.findOneAndDelete({ $or: [{ id }, { slug: id }] });
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Product not found in MongoDB." });
     }
 
-    // Fallback
-    let products = readProductsFromFile();
-    const initialLen = products.length;
-    products = products.filter((p) => p.id !== id && p.slug !== id);
-    if (products.length === initialLen) {
-      return res.status(404).json({ success: false, message: "Product not found." });
-    }
-    syncProductsToFile(products);
-    return res.json({ success: true, message: "Product deleted successfully." });
+    console.log(`🗑️ [MongoDB] Product deleted: ${deleted.id}`);
+    return res.json({ success: true, message: "Product deleted successfully from MongoDB." });
   } catch (error) {
-    console.error("Delete product error:", error);
-    return res.status(500).json({ success: false, message: error.message || "Failed to delete product." });
+    console.error("MongoDB Delete product error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to delete product from MongoDB.",
+    });
   }
 }

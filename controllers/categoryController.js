@@ -1,61 +1,62 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import Category from "../models/Category.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const categoriesFilePath = path.join(__dirname, "..", "data", "categories.json");
-const frontendCategoriesPath = path.join(__dirname, "..", "..", "frontend", "public", "data", "categories.json");
-
-// Helper for fallback JSON storage
-function readCategoriesFromFile() {
-  try {
-    if (fs.existsSync(categoriesFilePath)) {
-      return JSON.parse(fs.readFileSync(categoriesFilePath, "utf8"));
-    }
-    if (fs.existsSync(frontendCategoriesPath)) {
-      return JSON.parse(fs.readFileSync(frontendCategoriesPath, "utf8"));
-    }
-  } catch (err) {
-    console.error("Error reading categories JSON:", err);
+function ensureDbConnected(res) {
+  if (mongoose.connection.readyState !== 1) {
+    res.status(503).json({
+      success: false,
+      message: "MongoDB connection is not active. Database is required.",
+    });
+    return false;
   }
-  return [];
-}
-
-function syncCategoriesToFile(categories) {
-  try {
-    const json = JSON.stringify(categories, null, 2);
-    fs.writeFileSync(categoriesFilePath, json, "utf8");
-    if (fs.existsSync(path.dirname(frontendCategoriesPath))) {
-      fs.writeFileSync(frontendCategoriesPath, json, "utf8");
-    }
-  } catch (err) {
-    console.warn("Could not sync categories to file:", err.message);
-  }
+  return true;
 }
 
 // GET /api/categories
 export async function getCategories(req, res) {
   try {
-    if (mongoose.connection.readyState === 1) {
-      const categories = await Category.find().sort({ createdAt: 1 }).lean();
-      return res.json({ success: true, data: categories });
-    }
-    // Fallback if DB not connected
-    const categories = readCategoriesFromFile();
-    return res.json({ success: true, data: categories });
+    if (!ensureDbConnected(res)) return;
+
+    const categories = await Category.find().sort({ createdAt: 1 }).lean();
+    return res.json({ success: true, count: categories.length, data: categories });
   } catch (error) {
-    console.error("Get categories error:", error);
-    const categories = readCategoriesFromFile();
-    return res.json({ success: true, data: categories });
+    console.error("MongoDB Get categories error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch categories from MongoDB.",
+    });
+  }
+}
+
+// GET /api/categories/:id
+export async function getCategoryById(req, res) {
+  try {
+    if (!ensureDbConnected(res)) return;
+
+    const { id } = req.params;
+    const category = await Category.findOne({
+      $or: [{ id }, { slug: id }],
+    }).lean();
+
+    if (!category) {
+      return res.status(404).json({ success: false, message: "Category not found in MongoDB." });
+    }
+
+    return res.json({ success: true, data: category });
+  } catch (error) {
+    console.error("MongoDB Get category error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch category from MongoDB.",
+    });
   }
 }
 
 // POST /api/categories
 export async function createCategory(req, res) {
   try {
+    if (!ensureDbConnected(res)) return;
+
     const { name, image, description } = req.body || {};
     if (!name) {
       return res.status(400).json({ success: false, message: "Category name is required." });
@@ -63,6 +64,11 @@ export async function createCategory(req, res) {
 
     const id = req.body.id || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     const slug = req.body.slug || id;
+
+    const existing = await Category.findOne({ $or: [{ id }, { slug }] });
+    if (existing) {
+      return res.status(400).json({ success: false, message: "Category ID or Slug already exists in MongoDB." });
+    }
 
     const categoryData = {
       id,
@@ -72,94 +78,65 @@ export async function createCategory(req, res) {
       description: description || "",
     };
 
-    if (mongoose.connection.readyState === 1) {
-      const existing = await Category.findOne({ $or: [{ id }, { slug }] });
-      if (existing) {
-        return res.status(400).json({ success: false, message: "Category ID or Slug already exists." });
-      }
-      const newCategory = await Category.create(categoryData);
-      
-      // Sync file in background
-      Category.find().lean().then(syncCategoriesToFile).catch(() => {});
-
-      return res.status(201).json({ success: true, data: newCategory });
-    }
-
-    // Fallback
-    const categories = readCategoriesFromFile();
-    if (categories.some((c) => c.id === id || c.slug === slug)) {
-      return res.status(400).json({ success: false, message: "Category ID or Slug already exists." });
-    }
-    categories.push(categoryData);
-    syncCategoriesToFile(categories);
-    return res.status(201).json({ success: true, data: categoryData });
+    const newCategory = await Category.create(categoryData);
+    console.log(`✅ [MongoDB] Category created: ${newCategory.id} (${newCategory.name})`);
+    return res.status(201).json({ success: true, data: newCategory });
   } catch (error) {
-    console.error("Create category error:", error);
-    return res.status(500).json({ success: false, message: error.message || "Failed to create category." });
+    console.error("MongoDB Create category error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create category in MongoDB.",
+    });
   }
 }
 
 // PUT /api/categories/:id
 export async function updateCategory(req, res) {
   try {
+    if (!ensureDbConnected(res)) return;
+
     const { id } = req.params;
 
-    if (mongoose.connection.readyState === 1) {
-      const updated = await Category.findOneAndUpdate(
-        { $or: [{ id }, { slug: id }] },
-        { $set: req.body },
-        { new: true }
-      ).lean();
+    const updated = await Category.findOneAndUpdate(
+      { $or: [{ id }, { slug: id }] },
+      { $set: req.body },
+      { returnDocument: "after" }
+    ).lean();
 
-      if (!updated) {
-        return res.status(404).json({ success: false, message: "Category not found." });
-      }
-
-      Category.find().lean().then(syncCategoriesToFile).catch(() => {});
-      return res.json({ success: true, data: updated });
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Category not found in MongoDB." });
     }
 
-    // Fallback
-    const categories = readCategoriesFromFile();
-    const index = categories.findIndex((c) => c.id === id || c.slug === id);
-    if (index === -1) {
-      return res.status(404).json({ success: false, message: "Category not found." });
-    }
-    categories[index] = { ...categories[index], ...req.body };
-    syncCategoriesToFile(categories);
-    return res.json({ success: true, data: categories[index] });
+    console.log(`✅ [MongoDB] Category updated: ${updated.id} (${updated.name})`);
+    return res.json({ success: true, data: updated });
   } catch (error) {
-    console.error("Update category error:", error);
-    return res.status(500).json({ success: false, message: error.message || "Failed to update category." });
+    console.error("MongoDB Update category error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update category in MongoDB.",
+    });
   }
 }
 
 // DELETE /api/categories/:id
 export async function deleteCategory(req, res) {
   try {
+    if (!ensureDbConnected(res)) return;
+
     const { id } = req.params;
 
-    if (mongoose.connection.readyState === 1) {
-      const deleted = await Category.findOneAndDelete({ $or: [{ id }, { slug: id }] });
-      if (!deleted) {
-        return res.status(404).json({ success: false, message: "Category not found." });
-      }
-
-      Category.find().lean().then(syncCategoriesToFile).catch(() => {});
-      return res.json({ success: true, message: "Category deleted successfully." });
+    const deleted = await Category.findOneAndDelete({ $or: [{ id }, { slug: id }] });
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Category not found in MongoDB." });
     }
 
-    // Fallback
-    let categories = readCategoriesFromFile();
-    const initialLen = categories.length;
-    categories = categories.filter((c) => c.id !== id && c.slug !== id);
-    if (categories.length === initialLen) {
-      return res.status(404).json({ success: false, message: "Category not found." });
-    }
-    syncCategoriesToFile(categories);
-    return res.json({ success: true, message: "Category deleted successfully." });
+    console.log(`🗑️ [MongoDB] Category deleted: ${deleted.id}`);
+    return res.json({ success: true, message: "Category deleted successfully from MongoDB." });
   } catch (error) {
-    console.error("Delete category error:", error);
-    return res.status(500).json({ success: false, message: error.message || "Failed to delete category." });
+    console.error("MongoDB Delete category error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to delete category from MongoDB.",
+    });
   }
 }

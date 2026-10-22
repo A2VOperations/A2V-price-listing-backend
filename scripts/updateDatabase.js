@@ -8,13 +8,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function updateDatabase() {
-  const localURI = "mongodb://127.0.0.1:27017/a2v_prints";
-  const cloudURI = process.env.MONGODB_URI;
+  const mongoURI = process.env.MONGODB_URI;
 
-  const targets = [{ name: "Local MongoDB (a2v_prints)", uri: localURI }];
-  if (cloudURI && cloudURI.includes("mongodb")) {
-    targets.push({ name: "Cloud MongoDB Atlas", uri: cloudURI });
+  if (!mongoURI || !mongoURI.includes("mongodb")) {
+    console.error("❌ No MONGODB_URI found in environment variables.");
+    process.exit(1);
   }
+
+  const targets = [{ name: "Cloud MongoDB Atlas (A2V-Pricing)", uri: mongoURI }];
 
   const productsPath = path.join(__dirname, "..", "data", "products.json");
   const categoriesPath = path.join(__dirname, "..", "data", "categories.json");
@@ -28,6 +29,7 @@ async function updateDatabase() {
     try {
       const conn = await mongoose.createConnection(target.uri, {
         serverSelectionTimeoutMS: 5000,
+        dbName: "A2V-Pricing",
       }).asPromise();
 
       console.log(`✅ Connected to ${target.name}!`);
