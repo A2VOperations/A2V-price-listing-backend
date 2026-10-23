@@ -5,6 +5,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { connectDB } from "./config/db.js";
+import { initCronJobs } from "./config/cron.js";
 import apiRoutes from "./routes/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,4 +55,6 @@ app.get("/health", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Node.js Express MVC Backend Server with MongoDB running at http://localhost:${PORT}`);
+  // Initialize cron jobs (keep-alive pings, etc.)
+  initCronJobs();
 });
