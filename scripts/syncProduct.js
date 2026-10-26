@@ -20,7 +20,14 @@ async function syncProduct() {
     await mongoose.connect(mongoURI, { dbName: "A2V-Pricing" });
     console.log("Connected to MongoDB successfully!");
 
-    const productsPath = path.join(__dirname, "..", "data", "products.json");
+    const possiblePaths = [
+      path.join(__dirname, "..", "data", "products.json"),
+      path.join(__dirname, "..", "..", "frontend", "server", "data", "products.json"),
+    ];
+    const productsPath = possiblePaths.find((p) => fs.existsSync(p));
+    if (!productsPath) {
+      throw new Error("Could not find products.json");
+    }
     const products = JSON.parse(fs.readFileSync(productsPath, "utf8"));
 
     const standees = products.filter((p) => p.subCategory === "STANDIE");
