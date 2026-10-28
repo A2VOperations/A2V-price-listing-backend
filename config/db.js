@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Category from "../models/Category.js";
 import Product from "../models/Product.js";
+import { seedAdminUsers } from "./seedAdmin.js";
 
 export async function connectDB() {
   const mongoURI = process.env.MONGODB_URI;
@@ -21,6 +22,9 @@ export async function connectDB() {
     const catCount = await Category.countDocuments();
     const prodCount = await Product.countDocuments();
     console.log(`📊 Database Status: ${catCount} categories, ${prodCount} products loaded in MongoDB.`);
+
+    // Seed initial admin user if not present
+    await seedAdminUsers();
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);
   }

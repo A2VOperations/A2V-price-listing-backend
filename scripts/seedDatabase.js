@@ -1,9 +1,12 @@
 import mongoose from "mongoose";
 import "dotenv/config";
+import { fileURLToPath } from "url";
 import Category from "../models/Category.js";
 import Product from "../models/Product.js";
+import User from "../models/User.js";
+import { seedUsersToDatabase } from "./seedUsers.js";
 
-async function verifyDatabase() {
+async function verifyAndSeedDatabase() {
   const mongoURI = process.env.MONGODB_URI;
 
   if (!mongoURI || !mongoURI.includes("mongodb")) {
@@ -17,7 +20,7 @@ async function verifyDatabase() {
 
   try {
     await mongoose.connect(mongoURI, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 8000,
       dbName: "A2V-Pricing",
     });
     console.log(`✅ Connected: ${mongoose.connection.host}/${mongoose.connection.name}`);
@@ -27,15 +30,28 @@ async function verifyDatabase() {
 
     console.log(`\n📁 Total Categories in MongoDB: ${catCount}`);
     console.log(`📦 Total Products in MongoDB:   ${prodCount}`);
-    console.log("\nNote: Local static JSON files have been removed. All data and calculations are managed directly in MongoDB.");
+
+    // Inject seed users into database
+    await seedUsersToDatabase();
+
+    const userCount = await User.countDocuments();
+    console.log(`👥 Total Users in MongoDB:      ${userCount}`);
     console.log("=================================================\n");
 
     await mongoose.disconnect();
+    console.log("✅ Database verification and user seeding completed successfully.");
     process.exit(0);
   } catch (err) {
-    console.error("❌ Database connection error:", err.message);
+    console.error("❌ Database seeding error:", err.message);
     process.exit(1);
   }
 }
 
-verifyDatabase();
+const isDirectRun = Boolean(
+  process.argv[1] &&
+    (fileURLToPath(import.meta.url) === process.argv[1] ||
+      process.argv[1].endsWith("seedDatabase.js"))
+);
+if (isDirectRun) {
+  verifyAndSeedDatabase();
+}
