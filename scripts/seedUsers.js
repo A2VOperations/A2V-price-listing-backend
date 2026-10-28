@@ -1,11 +1,19 @@
 import mongoose from "mongoose";
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "path";
 import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+dotenv.config();
+
 import User from "../models/User.js";
 import { hashPassword } from "../utils/authUtils.js";
 
 const DEFAULT_ADMIN_USERNAME = (process.env.ADMIN_USERNAME || "admin").trim().toLowerCase();
-const DEFAULT_ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "operationa2vgroups@gmail.com").trim().toLowerCase();
+const DEFAULT_ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "operation.a2vgroups@gmail.com").trim().toLowerCase();
 const DEFAULT_ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || "admin@a2v").trim();
 const DEFAULT_ADMIN_NAME = "System Administrator";
 

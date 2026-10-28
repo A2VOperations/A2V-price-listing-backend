@@ -67,11 +67,12 @@ export async function login(req, res) {
     }
 
     // Ensure user has a valid email address configured
-    const destinationEmail = user.email || process.env.ADMIN_EMAIL || "operationa2vgroups@gmail.com";
+    const destinationEmail = user.email || process.env.ADMIN_EMAIL || "operation.a2vgroups@gmail.com";
 
     // Send OTP via Supabase to user's email
+    let otpResult = null;
     try {
-      await sendEmailOtp(destinationEmail);
+      otpResult = await sendEmailOtp(destinationEmail);
     } catch (otpErr) {
       console.error("Supabase OTP Error:", otpErr.message);
       return res.status(502).json({
@@ -86,6 +87,7 @@ export async function login(req, res) {
       username: user.username,
       email: destinationEmail,
       role: user.role,
+      verificationType: otpResult?.verificationType || "magiclink",
     });
 
     return res.json({
@@ -93,7 +95,10 @@ export async function login(req, res) {
       requireOtp: true,
       tempToken,
       email: maskEmail(destinationEmail),
-      message: `Verification code sent to ${maskEmail(destinationEmail)}. Please check your inbox.`,
+      emailDelivered: otpResult?.emailDelivered,
+      message:
+        otpResult?.message ||
+        `Verification code sent to ${maskEmail(destinationEmail)}. Please check your inbox.`,
     });
   } catch (error) {
     console.error("MongoDB Login Error:", error);
@@ -134,7 +139,7 @@ export async function verifyOtp(req, res) {
 
     // Verify OTP with Supabase
     try {
-      await verifyEmailOtp(payload.email, cleanOtp);
+      await verifyEmailOtp(payload.email, cleanOtp, payload.verificationType);
     } catch (verifyErr) {
       return res.status(400).json({
         success: false,

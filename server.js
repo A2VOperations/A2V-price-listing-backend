@@ -1,15 +1,20 @@
-import "dotenv/config";
-import express from "express";
-import cors from "cors";
+import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { connectDB } from "./config/db.js";
-import { initCronJobs } from "./config/cron.js";
-import apiRoutes from "./routes/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load .env from backend folder or current working directory
+dotenv.config({ path: path.join(__dirname, ".env") });
+dotenv.config();
+
+import express from "express";
+import cors from "cors";
+import { connectDB } from "./config/db.js";
+import { initCronJobs } from "./config/cron.js";
+import apiRoutes from "./routes/index.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
