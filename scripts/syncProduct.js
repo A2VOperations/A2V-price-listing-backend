@@ -22,7 +22,15 @@ async function syncProduct() {
 
     const possiblePaths = [
       path.join(__dirname, "..", "data", "products.json"),
-      path.join(__dirname, "..", "..", "frontend", "server", "data", "products.json"),
+      path.join(
+        __dirname,
+        "..",
+        "..",
+        "frontend",
+        "server",
+        "data",
+        "products.json",
+      ),
     ];
     const productsPath = possiblePaths.find((p) => fs.existsSync(p));
     if (!productsPath) {
@@ -37,9 +45,11 @@ async function syncProduct() {
       const result = await Product.findOneAndUpdate(
         { id: standee.id },
         { $set: toUpdate },
-        { new: true, upsert: true }
+        { new: true, upsert: true },
       );
-      console.log(`✅ Successfully updated ${standee.id} (${standee.name}) in MongoDB!`);
+      console.log(
+        `✅ Successfully updated ${standee.id} (${standee.name}) in MongoDB!`,
+      );
     }
 
     // Clean up old STD-003

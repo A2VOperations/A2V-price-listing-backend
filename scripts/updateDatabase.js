@@ -15,7 +15,9 @@ async function updateDatabase() {
     process.exit(1);
   }
 
-  const targets = [{ name: "Cloud MongoDB Atlas (A2V-Pricing)", uri: mongoURI }];
+  const targets = [
+    { name: "Cloud MongoDB Atlas (A2V-Pricing)", uri: mongoURI },
+  ];
 
   const productsPath = path.join(__dirname, "..", "data", "products.json");
   const categoriesPath = path.join(__dirname, "..", "data", "categories.json");
@@ -27,10 +29,12 @@ async function updateDatabase() {
     console.log(`\n========================================`);
     console.log(`Connecting to: ${target.name}...`);
     try {
-      const conn = await mongoose.createConnection(target.uri, {
-        serverSelectionTimeoutMS: 5000,
-        dbName: "A2V-Pricing",
-      }).asPromise();
+      const conn = await mongoose
+        .createConnection(target.uri, {
+          serverSelectionTimeoutMS: 5000,
+          dbName: "A2V-Pricing",
+        })
+        .asPromise();
 
       console.log(`✅ Connected to ${target.name}!`);
       const Product = conn.collection("products");
@@ -40,7 +44,11 @@ async function updateDatabase() {
       const delResult = await Product.deleteMany({
         $or: [
           { subCategory: "STANDIE" },
-          { id: { $in: ["STD-001", "STD-002", "STD-003", "STD-004", "STD-005"] } },
+          {
+            id: {
+              $in: ["STD-001", "STD-002", "STD-003", "STD-004", "STD-005"],
+            },
+          },
         ],
       });
       console.log(`🗑️ Removed ${delResult.deletedCount} old standee products.`);
@@ -53,7 +61,7 @@ async function updateDatabase() {
         await Product.updateOne(
           { id: prod.id },
           { $set: toSet },
-          { upsert: true }
+          { upsert: true },
         );
         updatedCount++;
       }
@@ -66,7 +74,7 @@ async function updateDatabase() {
         await Category.updateOne(
           { id: cat.id },
           { $set: toSet },
-          { upsert: true }
+          { upsert: true },
         );
       }
       console.log(`📁 Upserted ${categories.length} categories.`);
