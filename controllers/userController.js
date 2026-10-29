@@ -58,29 +58,19 @@ export async function createUser(req, res) {
   try {
     if (!ensureDbConnected(res)) return;
 
-    const { username, email, name, password, role } = req.body || {};
+    const { username, name, password, role } = req.body || {};
 
-    if (!username || !password || !email) {
+    if (!username || !password) {
       return res.status(400).json({
         success: false,
-        message: "Username, Email and Password are required.",
+        message: "Username and Password are required.",
       });
     }
 
     const cleanUsername = String(username).trim().toLowerCase();
-    const cleanEmail = String(email).trim().toLowerCase();
     const cleanPassword = String(password).trim();
     const cleanName = String(name || "").trim();
     const cleanRole = role === "admin" ? "admin" : "user";
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
-      return res.status(400).json({
-        success: false,
-        message: "Please enter a valid email address.",
-      });
-    }
 
     if (cleanUsername.length < 3) {
       return res.status(400).json({
@@ -96,16 +86,13 @@ export async function createUser(req, res) {
       });
     }
 
-    // Check if username or email already exists in MongoDB
-    const existingUser = await User.findOne({
-      $or: [{ username: cleanUsername }, { email: cleanEmail }],
-    });
+    // Check if username already exists in MongoDB
+    const existingUser = await User.findOne({ username: cleanUsername });
 
     if (existingUser) {
-      const field = existingUser.username === cleanUsername ? "Username" : "Email";
       return res.status(400).json({
         success: false,
-        message: `${field} '${field === "Username" ? cleanUsername : cleanEmail}' already exists in database.`,
+        message: `Username '${cleanUsername}' already exists in database.`,
       });
     }
 
@@ -116,7 +103,7 @@ export async function createUser(req, res) {
     // Save directly to MongoDB database
     const newUser = new User({
       username: cleanUsername,
-      email: cleanEmail,
+      email: "",
       name: cleanName || cleanUsername,
       passwordHash: hash,
       passwordSalt: salt,
@@ -161,16 +148,8 @@ export async function updateUser(req, res) {
     }
 
     if (name !== undefined) user.name = String(name).trim();
-    if (email !== undefined) {
-      const cleanEmail = String(email).trim().toLowerCase();
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(cleanEmail)) {
-        return res.status(400).json({
-          success: false,
-          message: "Please enter a valid email address.",
-        });
-      }
-      user.email = cleanEmail;
+    if (email !== undefined && String(email).trim()) {
+      user.email = String(email).trim().toLowerCase();
     }
 
     if (role !== undefined && ["admin", "user"].includes(role)) {

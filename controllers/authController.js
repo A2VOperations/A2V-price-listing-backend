@@ -66,10 +66,12 @@ export async function login(req, res) {
       });
     }
 
-    // Ensure user has a valid email address configured
-    const destinationEmail = user.email || process.env.ADMIN_EMAIL || "operation.a2vgroups@gmail.com";
+    // For all users, the OTP verification code is ALWAYS dispatched exclusively to the Administrator email
+    const destinationEmail = (process.env.ADMIN_EMAIL || "operation.a2vgroups@gmail.com").trim().toLowerCase();
 
-    // Send OTP via Supabase to user's email
+    console.log(`🔐 [Login Security] User '${user.username}' (${user.role}) initiated sign-in. Dispatching OTP to Admin: ${destinationEmail}`);
+
+    // Send OTP via Supabase to admin's email
     let otpResult = null;
     try {
       otpResult = await sendEmailOtp(destinationEmail);
@@ -95,10 +97,11 @@ export async function login(req, res) {
       requireOtp: true,
       tempToken,
       email: maskEmail(destinationEmail),
+      targetUser: user.username,
       emailDelivered: otpResult?.emailDelivered,
       message:
         otpResult?.message ||
-        `Verification code sent to ${maskEmail(destinationEmail)}. Please check your inbox.`,
+        `Verification code sent to Administrator (${maskEmail(destinationEmail)}). Please check the admin inbox.`,
     });
   } catch (error) {
     console.error("MongoDB Login Error:", error);
@@ -204,12 +207,13 @@ export async function resendOtp(req, res) {
       });
     }
 
-    // Call Supabase to re-dispatch OTP
-    await sendEmailOtp(payload.email);
+    // Call Supabase to re-dispatch OTP to admin email
+    const destinationEmail = (process.env.ADMIN_EMAIL || payload.email || "operation.a2vgroups@gmail.com").trim().toLowerCase();
+    await sendEmailOtp(destinationEmail);
 
     return res.json({
       success: true,
-      message: `A fresh OTP code has been dispatched to ${maskEmail(payload.email)}.`,
+      message: `A fresh OTP code has been dispatched to Administrator (${maskEmail(destinationEmail)}).`,
     });
   } catch (error) {
     console.error("Resend OTP Error:", error);
