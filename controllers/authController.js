@@ -68,13 +68,20 @@ export async function login(req, res) {
 
     // For all users, the OTP verification code is ALWAYS dispatched exclusively to the Administrator email
     const destinationEmail = (process.env.ADMIN_EMAIL || "operation.a2vgroups@gmail.com").trim().toLowerCase();
+    const loginPerson = user.name || user.username;
+    const loginUsername = user.username;
+    const loginRole = user.role === "admin" ? "Administrator" : "Standard User";
 
-    console.log(`🔐 [Login Security] User '${user.username}' (${user.role}) initiated sign-in. Dispatching OTP to Admin: ${destinationEmail}`);
+    console.log(`🔐 [Login Security] User '${loginUsername}' (${loginPerson} / ${loginRole}) initiated sign-in. Dispatching OTP to Admin: ${destinationEmail}`);
 
-    // Send OTP via Supabase to admin's email
+    // Send OTP via Supabase to admin's email with login identity metadata
     let otpResult = null;
     try {
-      otpResult = await sendEmailOtp(destinationEmail);
+      otpResult = await sendEmailOtp(destinationEmail, {
+        loginPerson,
+        loginUsername,
+        loginRole,
+      });
     } catch (otpErr) {
       console.error("Supabase OTP Error:", otpErr.message);
       return res.status(502).json({
@@ -87,6 +94,7 @@ export async function login(req, res) {
     const tempToken = createTempAuthToken({
       userId: user._id.toString(),
       username: user.username,
+      name: user.name,
       email: destinationEmail,
       role: user.role,
       verificationType: otpResult?.verificationType || "magiclink",
@@ -207,9 +215,17 @@ export async function resendOtp(req, res) {
       });
     }
 
-    // Call Supabase to re-dispatch OTP to admin email
+    // Call Supabase to re-dispatch OTP to admin email with user metadata
     const destinationEmail = (process.env.ADMIN_EMAIL || payload.email || "operation.a2vgroups@gmail.com").trim().toLowerCase();
-    await sendEmailOtp(destinationEmail);
+    const loginPerson = payload.name || payload.username || "Authorized User";
+    const loginUsername = payload.username || "N/A";
+    const loginRole = payload.role === "admin" ? "Administrator" : "Standard User";
+
+    await sendEmailOtp(destinationEmail, {
+      loginPerson,
+      loginUsername,
+      loginRole,
+    });
 
     return res.json({
       success: true,

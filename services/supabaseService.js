@@ -79,12 +79,10 @@ export async function generateSupabaseOtp(email) {
 
 /**
  * Dispatch OTP email exclusively through Supabase Auth
- * 1. Tries Supabase's native OTP dispatcher (POST /auth/v1/otp)
- * 2. If Supabase Custom SMTP fails or has invalid dashboard host settings,
- *    falls back to Supabase Admin generate_link and logs the OTP in the console
- *    with instructions on how to correct the dashboard SMTP settings.
+ * Includes login metadata (Person Name, User ID, Role) so the Admin
+ * receives full context in the email about who is attempting to log in.
  */
-export async function sendEmailOtp(email) {
+export async function sendEmailOtp(email, metadata = {}) {
   const { url, key } = getSupabaseConfig();
   const cleanEmail = String(email || "").trim().toLowerCase();
 
@@ -92,9 +90,44 @@ export async function sendEmailOtp(email) {
     throw new Error("Supabase credentials are not configured in backend/.env");
   }
 
-  console.log(`📡 [Supabase Auth] Requesting OTP email dispatch for: ${cleanEmail}`);
+  const personName = metadata.loginPerson || metadata.loginUsername || "Authorized User";
+  const username = metadata.loginUsername || "N/A";
+  const role = metadata.loginRole || "Standard User";
 
-  // 1. Attempt to send OTP via Supabase's native mailer
+  console.log(`📡 [Supabase Auth] Requesting OTP email dispatch for: ${cleanEmail} (Attempt by: ${personName} [${username}])`);
+
+  // Update Supabase user_metadata before dispatch so {{ .Data.login_person }} renders in templates
+  try {
+    const usersRes = await fetch(`${url}/auth/v1/admin/users`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    const usersData = await usersRes.json().catch(() => ({}));
+    const existingUser = usersData.users?.find((u) => u.email === cleanEmail);
+
+    if (existingUser?.id) {
+      await fetch(`${url}/auth/v1/admin/users/${existingUser.id}`, {
+        method: "PUT",
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_metadata: {
+            ...(existingUser.user_metadata || {}),
+            login_person: personName,
+            login_username: username,
+            login_role: role,
+            login_time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+          },
+        }),
+      });
+    }
+  } catch (metaErr) {
+    console.warn("⚠️ [Supabase Auth] Could not update user_metadata:", metaErr.message);
+  }
+
+  // 1. Attempt to send OTP via Supabase's native mailer with custom data payload
   try {
     const res = await fetch(`${url}/auth/v1/otp`, {
       method: "POST",
@@ -106,6 +139,11 @@ export async function sendEmailOtp(email) {
       body: JSON.stringify({
         email: cleanEmail,
         create_user: true,
+        data: {
+          login_person: personName,
+          login_username: username,
+          login_role: role,
+        },
       }),
     });
 
