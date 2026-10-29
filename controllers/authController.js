@@ -167,7 +167,9 @@ export async function verifyOtp(req, res) {
       });
     }
 
-    // Generate Final Session Token (7 days)
+    // Generate Final Session Token (8 hours auto-expiry)
+    const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
+    const expiresAt = Date.now() + SESSION_DURATION_MS;
     const safeUser = user.toSafeObject();
     const token = createToken({
       id: safeUser.id,
@@ -182,6 +184,8 @@ export async function verifyOtp(req, res) {
       message: `Authentication successful! Welcome, ${safeUser.name || safeUser.username}.`,
       token,
       user: safeUser,
+      expiresAt,
+      sessionDurationHours: 8,
     });
   } catch (error) {
     console.error("Verify OTP Error:", error);

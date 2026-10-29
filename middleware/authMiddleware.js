@@ -19,7 +19,7 @@ export function requireAuth(req, res, next) {
   if (!payload) {
     return res.status(401).json({
       success: false,
-      message: "Session expired or invalid token. Please sign in again.",
+      message: "Session expired after 8 hours or invalid token. Please sign in again.",
     });
   }
 

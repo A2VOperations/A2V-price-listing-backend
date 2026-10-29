@@ -43,14 +43,17 @@ function base64UrlDecode(str) {
   return Buffer.from(str, "base64").toString();
 }
 
+export const SESSION_DURATION_HOURS = 8;
+export const SESSION_DURATION_MS = SESSION_DURATION_HOURS * 60 * 60 * 1000; // 8 hours
+
 /**
  * Create a cryptographically signed HMAC-SHA256 session token
- * Expiry: 7 days
+ * Expiry: 8 hours
  */
 export function createToken(payload) {
   const header = { alg: "HS256", typ: "JWT" };
-  const exp = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
-  const tokenPayload = { ...payload, exp };
+  const exp = Date.now() + SESSION_DURATION_MS; // Exactly 8 hours
+  const tokenPayload = { ...payload, exp, sessionDurationHours: SESSION_DURATION_HOURS };
 
   const headerB64 = base64UrlEncode(JSON.stringify(header));
   const payloadB64 = base64UrlEncode(JSON.stringify(tokenPayload));
