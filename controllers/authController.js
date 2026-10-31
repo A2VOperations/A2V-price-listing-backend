@@ -107,6 +107,8 @@ export async function login(req, res) {
       email: maskEmail(destinationEmail),
       targetUser: user.username,
       emailDelivered: otpResult?.emailDelivered,
+      rateLimited: otpResult?.rateLimited || false,
+      cooldownSeconds: otpResult?.cooldownSeconds || 60,
       message:
         otpResult?.message ||
         `Verification code sent to Administrator (${maskEmail(destinationEmail)}). Please check the admin inbox.`,
@@ -225,7 +227,7 @@ export async function resendOtp(req, res) {
     const loginUsername = payload.username || "N/A";
     const loginRole = payload.role === "admin" ? "Administrator" : "Standard User";
 
-    await sendEmailOtp(destinationEmail, {
+    const otpResult = await sendEmailOtp(destinationEmail, {
       loginPerson,
       loginUsername,
       loginRole,
@@ -233,7 +235,11 @@ export async function resendOtp(req, res) {
 
     return res.json({
       success: true,
-      message: `A fresh OTP code has been dispatched to Administrator (${maskEmail(destinationEmail)}).`,
+      rateLimited: otpResult?.rateLimited || false,
+      cooldownSeconds: otpResult?.cooldownSeconds || 60,
+      message:
+        otpResult?.message ||
+        `A fresh OTP code has been dispatched to Administrator (${maskEmail(destinationEmail)}).`,
     });
   } catch (error) {
     console.error("Resend OTP Error:", error);

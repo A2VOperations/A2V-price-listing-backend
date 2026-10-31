@@ -154,16 +154,34 @@ export async function sendEmailOtp(email, metadata = {}) {
       return {
         success: true,
         emailDelivered: true,
+        rateLimited: false,
+        cooldownSeconds: 60,
         verificationType: "email",
-        message: `Verification code sent to ${cleanEmail} via Supabase. Please check your inbox.`,
+        message: `Verification code sent to Administrator (${cleanEmail}). Please check the admin inbox.`,
+      };
+    }
+
+    // Handle Supabase 60-second rate limiting gracefully
+    // IMPORTANT: Do NOT generate a link/phantom OTP when rate-limited!
+    // Generating a link would overwrite & invalidate the active OTP that was already delivered to the email!
+    if (res.status === 429 || data.error_code === "over_email_send_rate_limit") {
+      const waitMatch = data.msg ? data.msg.match(/\d+/) : null;
+      const waitSeconds = waitMatch ? parseInt(waitMatch[0], 10) : 60;
+      console.warn(`⏳ [Supabase Auth] Email send rate limited by Supabase. Must wait ${waitSeconds}s before sending another email.`);
+      return {
+        success: true,
+        emailDelivered: true, // An active code was already dispatched within the last 60s
+        rateLimited: true,
+        cooldownSeconds: waitSeconds,
+        verificationType: "email",
+        message: `A verification code was recently sent to Administrator (${cleanEmail}). Please check your inbox or wait ${waitSeconds}s to request a new one.`,
       };
     }
 
     const errorMsg = data.msg || data.error_description || data.message || `HTTP ${res.status}`;
     console.warn(`⚠️ [Supabase Auth] Native mail dispatch returned: ${errorMsg}`);
 
-    // If Supabase failed to send email (e.g. SMTP config error in Supabase dashboard),
-    // fall back to generateSupabaseOtp so testing is not blocked
+    // If Supabase encountered an actual failure (e.g. SMTP credentials issue)
     console.log("🔄 [Supabase Auth] Falling back to Supabase Admin link generator...");
     const otpData = await generateSupabaseOtp(cleanEmail);
 
@@ -172,11 +190,11 @@ export async function sendEmailOtp(email, metadata = {}) {
     console.log(`   Reason: "${errorMsg}"`);
     console.log("   👉 In Supabase Dashboard (Authentication -> SMTP Settings):");
     console.log("      - Host:     smtp.gmail.com");
-    console.log("      - Port:     465 (or 587)");
+    console.log("      - Port:     587");
     console.log("      - Username: operation.a2vgroups@gmail.com");
-    console.log("      - Password: MUST be a 16-letter App Password from https://myaccount.google.com/apppasswords");
+    console.log("      - Password: MUST be 16-letter App Password (without spaces)");
     console.log("------------------------------------------------------------------------");
-    console.log("🔑 [USE THIS SUPABASE OTP CODE TO LOG IN NOW]");
+    console.log("🔑 [ACTIVE SUPABASE OTP CODE FOR LOGIN]");
     console.log(`   Recipient:         ${cleanEmail}`);
     console.log(`   Verification Code: ${otpData.emailOtp}`);
     console.log("========================================================================\n");
@@ -184,8 +202,10 @@ export async function sendEmailOtp(email, metadata = {}) {
     return {
       success: true,
       emailDelivered: false,
+      rateLimited: false,
+      cooldownSeconds: 60,
       verificationType: otpData.verificationType || "magiclink",
-      message: `Supabase email delivery failed (${errorMsg}). Your OTP code is printed in the backend terminal: ${otpData.emailOtp}`,
+      message: `Supabase email delivery failed (${errorMsg}). Your OTP code is logged in the server terminal: ${otpData.emailOtp}`,
     };
   } catch (err) {
     console.error("❌ [Supabase Auth] Error communicating with Supabase:", err.message);
@@ -209,12 +229,17 @@ export async function sendEmailOtp(email, metadata = {}) {
 export async function verifyEmailOtp(email, token, verificationType = "email") {
   const { url, key } = getSupabaseConfig();
   const cleanEmail = String(email || "").trim().toLowerCase();
-  const cleanToken = String(token || "").trim();
+  // Strip any non-alphanumeric characters, spaces, or dashes
+  const cleanToken = String(token || "").replace(/[^0-9a-zA-Z]/g, "").trim();
 
   if (!url || !key) {
     throw new Error(
       "Supabase credentials (SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY) are missing in environment variables."
     );
+  }
+
+  if (!cleanToken) {
+    throw new Error("Please enter a valid verification code.");
   }
 
   console.log(`🔍 [Supabase Auth] Verifying OTP code for email: ${cleanEmail}`);
