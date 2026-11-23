@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Product from "../models/Product.js";
+import { verifyToken } from "../utils/authUtils.js";
 
 function ensureDbConnected(res) {
   if (mongoose.connection.readyState !== 1) {
@@ -10,6 +11,80 @@ function ensureDbConnected(res) {
     return false;
   }
   return true;
+}
+
+/**
+ * Determine requester's role safely from Bearer token
+ */
+function getRequesterRole(req) {
+  const authHeader = req.headers?.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    const payload = verifyToken(token);
+    return payload?.role || "user";
+  }
+  return "user";
+}
+
+/**
+ * DTO Firewall: Strips internal cost, floor price (lastPrice), and vendor margins
+ * so Sales Executives and public clients never see confidential pricing.
+ */
+function sanitizeProductForSales(product) {
+  if (!product) return product;
+  const p = { ...product };
+  delete p.lastPrice;
+  delete p.costPrice;
+  delete p.internalCost;
+  delete p.vendorMargin;
+  delete p.bottomPrice;
+
+  if (Array.isArray(p.fixedQuantities)) {
+    p.fixedQuantities = p.fixedQuantities.map((fq) => {
+      const copy = { ...fq };
+      delete copy.lastPrice;
+      delete copy.costPrice;
+      return copy;
+    });
+  }
+
+  if (Array.isArray(p.quantityPricingTiers)) {
+    p.quantityPricingTiers = p.quantityPricingTiers.map((tier) => {
+      const copy = { ...tier };
+      delete copy.lastPrice;
+      delete copy.costPrice;
+      return copy;
+    });
+  }
+
+  if (Array.isArray(p.combinationPrices)) {
+    p.combinationPrices = p.combinationPrices.map((cp) => {
+      const copy = { ...cp };
+      delete copy.lastPrice;
+      if (Array.isArray(copy.quantityPrices)) {
+        copy.quantityPrices = copy.quantityPrices.map((qp) => {
+          const qCopy = { ...qp };
+          delete qCopy.lastPrice;
+          return qCopy;
+        });
+      }
+      return copy;
+    });
+  }
+
+  if (p.variantDetails && typeof p.variantDetails === "object") {
+    const vd = {};
+    for (const [k, v] of Object.entries(p.variantDetails)) {
+      if (v && typeof v === "object") {
+        vd[k] = sanitizeProductForSales(v);
+      } else {
+        vd[k] = v;
+      }
+    }
+    p.variantDetails = vd;
+  }
+
+  return p;
 }
 
 // GET /api/products
@@ -35,7 +110,10 @@ export async function getProducts(req, res) {
     }
 
     const products = await Product.find(query).sort({ createdAt: -1 }).lean();
-    return res.json({ success: true, count: products.length, data: products });
+    const role = getRequesterRole(req);
+    const data = role === "admin" ? products : products.map(sanitizeProductForSales);
+
+    return res.json({ success: true, count: data.length, data });
   } catch (error) {
     console.error("MongoDB Get products error:", error);
     return res.status(500).json({
@@ -72,7 +150,10 @@ export async function getProductBySlug(req, res) {
       return res.status(404).json({ success: false, message: "Product not found in MongoDB." });
     }
 
-    return res.json({ success: true, data: product });
+    const role = getRequesterRole(req);
+    const data = role === "admin" ? product : sanitizeProductForSales(product);
+
+    return res.json({ success: true, data });
   } catch (error) {
     console.error("MongoDB Get product error:", error);
     return res.status(500).json({
