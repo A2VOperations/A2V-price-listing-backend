@@ -45,25 +45,204 @@ export async function getPaperMasters(req, res) {
 
     const enriched = papers.map((paper) => {
       const activeRate = rateMap[paper._id.toString()] || null;
-      if (role === "admin") {
-        return { ...paper, activeRate };
-      }
-      // Non-admins (Sales Executives) should only get public spec without internal purchase rates
+      const looseRatePerSheet =
+        paper.looseSheetRate !== undefined && paper.looseSheetRate > 0
+          ? paper.looseSheetRate
+          : (activeRate ? activeRate.looseSheetRate : 0);
+      const reamRate =
+        paper.reamRate !== undefined && paper.reamRate > 0
+          ? paper.reamRate
+          : (activeRate ? activeRate.reamRate : 0);
+
       return {
         ...paper,
-        activeRate: activeRate
-          ? {
-              paperCode: activeRate.paperCode,
-              isProvisional: activeRate.isProvisional,
-              effectiveFrom: activeRate.effectiveFrom,
-            }
-          : null,
+        rawSheetWidth: paper.rawWidthInch,
+        rawHeightInch: paper.rawHeightInch,
+        looseSheetRate: looseRatePerSheet,
+        reamRate: reamRate,
+        activeRate: activeRate || { looseSheetRate: looseRatePerSheet, reamRate },
+        currentRate: {
+          looseRatePerSheet,
+          reamRate,
+          effectiveFrom: activeRate?.effectiveFrom || paper.updatedAt,
+          updatedBy: activeRate?.updatedBy || "admin",
+          remarks: activeRate?.remarks || "",
+        },
       };
     });
 
     return res.json({ success: true, count: enriched.length, data: enriched });
   } catch (error) {
     console.error("Get Paper Masters error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+// POST /api/masters/papers (Create a new Sheet in database)
+export async function createPaperMaster(req, res) {
+  try {
+    const {
+      rawWidthInch,
+      rawHeightInch,
+      paperType = "Newspaper",
+      gsm,
+      colour = "White",
+      looseSheetRate = 0,
+      reamRate = 0,
+      description = "",
+    } = req.body || {};
+
+    if (!rawWidthInch || !rawHeightInch || !gsm) {
+      return res.status(400).json({
+        success: false,
+        message: "Sheet Size (Width & Height) and GSM are required.",
+      });
+    }
+
+    const cleanType = String(paperType || "General").trim();
+    const cleanColour = String(colour || "White").trim();
+    const code = `PAP-${Number(rawWidthInch)}x${Number(rawHeightInch)}-${Number(gsm)}-${cleanType.toUpperCase().slice(0, 4)}-${cleanColour.toUpperCase().slice(0, 3)}-${Date.now().toString().slice(-4)}`;
+
+    const paper = await PaperMaster.create({
+      code,
+      rawWidthInch: Number(rawWidthInch),
+      rawHeightInch: Number(rawHeightInch),
+      paperType: cleanType,
+      gsm: Number(gsm),
+      colour: cleanColour,
+      looseSheetRate: Number(looseSheetRate) || 0,
+      reamRate: Number(reamRate) || 0,
+      description: description || `${cleanType} paper ${rawWidthInch}"x${rawHeightInch}" ${gsm} GSM ${cleanColour}`,
+      isActive: true,
+    });
+
+    const now = new Date();
+    const rate = await PaperRate.create({
+      paperId: paper._id,
+      paperCode: paper.code,
+      looseSheetRate: Number(looseSheetRate) || 0,
+      reamRate: Number(reamRate) || 0,
+      isProvisional: false,
+      effectiveFrom: now,
+      effectiveTill: null,
+      updatedBy: req.user?.username || "admin",
+      remarks: "Initial paper creation via Admin Panel",
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `Sheet ${rawWidthInch}"x${rawHeightInch}" ${cleanType} ${gsm} GSM added successfully!`,
+      data: {
+        ...paper.toObject(),
+        rawSheetWidth: paper.rawWidthInch,
+        rawHeightInch: paper.rawHeightInch,
+        activeRate: rate,
+        currentRate: {
+          looseRatePerSheet: rate.looseSheetRate,
+          reamRate: rate.reamRate,
+          effectiveFrom: rate.effectiveFrom,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Create Paper Master error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+// PUT /api/masters/papers/:id (Update Sheet properties and rates)
+export async function updatePaperMaster(req, res) {
+  try {
+    const { id } = req.params;
+    const {
+      rawWidthInch,
+      rawHeightInch,
+      paperType,
+      gsm,
+      colour,
+      looseSheetRate,
+      reamRate,
+      description,
+    } = req.body || {};
+
+    const paper = await PaperMaster.findById(id);
+    if (!paper) {
+      return res.status(404).json({ success: false, message: "Sheet not found." });
+    }
+
+    if (rawWidthInch !== undefined) paper.rawWidthInch = Number(rawWidthInch);
+    if (rawHeightInch !== undefined) paper.rawHeightInch = Number(rawHeightInch);
+    if (paperType !== undefined) paper.paperType = String(paperType).trim();
+    if (gsm !== undefined) {
+      paper.gsm = Number(gsm);
+      paper.gsmLabel = `${paper.gsm} GSM`;
+    }
+    if (colour !== undefined) paper.colour = String(colour).trim();
+    if (looseSheetRate !== undefined) paper.looseSheetRate = Number(looseSheetRate);
+    if (reamRate !== undefined) paper.reamRate = Number(reamRate);
+    if (description !== undefined) paper.description = description;
+
+    await paper.save();
+
+    let activeRate = await PaperRate.findOne({ paperId: id, effectiveTill: null });
+    if (looseSheetRate !== undefined || reamRate !== undefined) {
+      const now = new Date();
+      await PaperRate.updateMany(
+        { paperId: id, effectiveTill: null },
+        { $set: { effectiveTill: now } }
+      );
+
+      activeRate = await PaperRate.create({
+        paperId: paper._id,
+        paperCode: paper.code,
+        looseSheetRate: looseSheetRate !== undefined ? Number(looseSheetRate) : (activeRate?.looseSheetRate || 0),
+        reamRate: reamRate !== undefined ? Number(reamRate) : (activeRate?.reamRate || 0),
+        isProvisional: false,
+        effectiveFrom: now,
+        effectiveTill: null,
+        updatedBy: req.user?.username || "admin",
+        remarks: "Updated via Admin Panel",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Sheet updated successfully.",
+      data: {
+        ...paper.toObject(),
+        rawSheetWidth: paper.rawWidthInch,
+        rawHeightInch: paper.rawHeightInch,
+        activeRate,
+        currentRate: activeRate
+          ? {
+              looseRatePerSheet: activeRate.looseSheetRate,
+              reamRate: activeRate.reamRate,
+              effectiveFrom: activeRate.effectiveFrom,
+            }
+          : null,
+      },
+    });
+  } catch (error) {
+    console.error("Update Paper Master error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+// DELETE /api/masters/papers/:id (Deactivate Sheet)
+export async function deletePaperMaster(req, res) {
+  try {
+    const { id } = req.params;
+    const paper = await PaperMaster.findByIdAndUpdate(
+      id,
+      { $set: { isActive: false } },
+      { new: true }
+    );
+    if (!paper) {
+      return res.status(404).json({ success: false, message: "Sheet not found." });
+    }
+    return res.json({ success: true, message: "Sheet deleted successfully." });
+  } catch (error) {
+    console.error("Delete Paper Master error:", error);
     return res.status(500).json({ success: false, message: error.message });
   }
 }
@@ -83,6 +262,10 @@ export async function updatePaperRate(req, res) {
     if (!paper) {
       return res.status(404).json({ success: false, message: "Paper not found." });
     }
+
+    paper.looseSheetRate = Number(looseSheetRate);
+    paper.reamRate = Number(reamRate);
+    await paper.save();
 
     const now = new Date();
 

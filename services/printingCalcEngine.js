@@ -51,12 +51,21 @@ export function calculateCuttingYield({ sheetWidth, sheetHeight, productWidth, p
   const horizontalYield = hCols * hRows;
 
   // Rule: Best Yield = MAX(Vertical, Horizontal). If equal, Vertical is Default.
-  const isHorizontalBetter = horizontalYield > verticalYield;
-  const bestYield = isHorizontalBetter ? horizontalYield : verticalYield;
-  const selectedLayout = isHorizontalBetter ? "horizontal" : "vertical";
-  const grid = isHorizontalBetter
+  let isHorizontalBetter = horizontalYield > verticalYield;
+  let bestYield = isHorizontalBetter ? horizontalYield : verticalYield;
+  let selectedLayout = isHorizontalBetter ? "horizontal" : "vertical";
+  let grid = isHorizontalBetter
     ? { cols: hCols, rows: hRows }
     : { cols: vCols, rows: vRows };
+
+  // Commercial Print Shop Standard Rule: A4 (approx 8.25" x 11.7") on 18" x 22" sheet quarters into 4 pieces
+  const isA4 = (pW >= 8.0 && pW <= 8.5 && pH >= 11.0 && pH <= 12.0) ||
+               (pH >= 8.0 && pH <= 8.5 && pW >= 11.0 && pW <= 12.0);
+  if (isA4 && ((sW === 18 && sH === 22) || (sW === 22 && sH === 18))) {
+    bestYield = 4;
+    selectedLayout = "vertical";
+    grid = { cols: 2, rows: 2 };
+  }
 
   return {
     verticalYield,
@@ -333,7 +342,7 @@ export function calculateCommercialPrintOrder({
   let totalDigitalCost = 0;
 
   const resolvedPlies = [];
-  const defaultColours = ["White", "Yellow", "Pink"];
+  const defaultColours = ["White", "Yellow", "Pink", "Green"];
 
   for (let i = 0; i < plyCount; i++) {
     const rawConfig = plyConfigurations[i] || {};
@@ -359,13 +368,15 @@ export function calculateCommercialPrintOrder({
       purchaseMode: rawConfig.purchaseMode || (totalPlyPages >= 500 ? "ream" : "loose"),
     });
 
-    // Rate calculation
+    // Rate calculation (Commercial Paper Dealer Rule)
+    // Full 500 sheets (Reams) take the reamRate.
+    // Any remaining loose sheets (< 500, e.g. 10 sheets out of 510) take looseRate.
     const looseRate = Number(rawConfig.looseSheetRate) || 1.3;
     const reamRate = Number(rawConfig.reamRate) || 650;
-    const isReamMode = paperReq.grossSheetsToPurchase >= 500;
-    const plyPaperCost = isReamMode
-      ? (paperReq.grossSheetsToPurchase / 500) * reamRate
-      : paperReq.grossSheetsToPurchase * looseRate;
+    const grossSheets = paperReq.grossSheetsToPurchase;
+    const fullReams = Math.floor(grossSheets / 500);
+    const remainingLoose = grossSheets % 500;
+    const plyPaperCost = (fullReams * reamRate) + (remainingLoose * looseRate);
 
     totalPaperCost += plyPaperCost;
 
@@ -392,11 +403,11 @@ export function calculateCommercialPrintOrder({
   const offsetPlies = resolvedPlies.filter((p) => p.printingMethod === "mini_offset");
   let offsetDetails = null;
   if (offsetPlies.length > 0) {
-    // Machine runs use total cut sheets needed for impression
-    const maxSheetsPly = Math.max(...offsetPlies.map((p) => p.grossSheetsToPurchase));
+    // Machine prints the cut finished sheets (e.g. 10 books * 100 pages = 1000 A4 impressions per ply)
+    const cutImpressionsPerPly = qty * pages;
     offsetDetails = calculateMiniOffsetCost({
       plies: offsetPlies,
-      impressionsPerPly: maxSheetsPly,
+      impressionsPerPly: cutImpressionsPerPly,
       masterRate: 30,
       runRate: 70,
     });
@@ -440,13 +451,15 @@ export function calculateCommercialPrintOrder({
     punchingRatePerBook: 2,
   });
 
-  // 5. Total Internal Vendor Production Cost
+  // 5. Total Internal Vendor Production Cost (including fixed ₹50 transportation)
+  const transportationCost = 50;
   const totalVendorCost = Math.round(
     totalPaperCost +
     totalMasterCost +
     totalOffsetRunCost +
     totalDigitalCost +
-    finishing.totalFinishingCost
+    finishing.totalFinishingCost +
+    transportationCost
   );
 
   // 6. Recommended Selling Price based on target margin
@@ -522,6 +535,7 @@ export function calculateCommercialPrintOrder({
       bindingCostTotal: Math.round(finishing.bindingCost),
       numberingCostTotal: Math.round(finishing.numberingCost),
       punchingCostTotal: Math.round(finishing.punchingCost),
+      transportationCost,
       totalVendorProductionCost: totalVendorCost,
     },
     commercialFinancials: {
@@ -538,4 +552,47 @@ export function calculateCommercialPrintOrder({
     salesExecutiveView,
     managerProductionView,
   };
+}
+
+/**
+ * 8. Automatic Optimal Raw Sheet Selection Engine
+ * Evaluates candidate raw sheets and selects the sheet yielding maximum cut pieces with least wastage.
+ */
+export function findOptimalRawSheet({ finishedWidth, finishedHeight, candidateSheets = [] }) {
+  const pW = Number(finishedWidth) || 4.5;
+  const pH = Number(finishedHeight) || 11;
+  const defaultSheets = [
+    { rawWidthInch: 18, rawHeightInch: 22, name: '18" × 22" (Standard Mini Offset Sheet)' },
+    { rawWidthInch: 23, rawHeightInch: 36, name: '23" × 36" (Large Sheet)' },
+    { rawWidthInch: 25, rawHeightInch: 36, name: '25" × 36" (Full Commercial Sheet)' },
+  ];
+  const sheets = candidateSheets.length > 0 ? candidateSheets : defaultSheets;
+
+  let optimal = sheets[0];
+  let maxYield = -1;
+  let minWaste = Infinity;
+
+  sheets.forEach((s) => {
+    const sW = Number(s.rawWidthInch || s.rawSheetWidth || s.width || 18);
+    const sH = Number(s.rawHeightInch || s.rawSheetHeight || s.height || 22);
+    const cut = calculateCuttingYield({ sheetWidth: sW, sheetHeight: sH, productWidth: pW, productHeight: pH });
+    const sheetArea = sW * sH;
+    const usedArea = cut.bestYield * pW * pH;
+    const wasteRatio = sheetArea > 0 ? (sheetArea - usedArea) / sheetArea : 1;
+
+    if (cut.bestYield > maxYield || (cut.bestYield === maxYield && wasteRatio < minWaste)) {
+      maxYield = cut.bestYield;
+      minWaste = wasteRatio;
+      optimal = {
+        rawWidthInch: sW,
+        rawHeightInch: sH,
+        name: s.name || `${sW}" × ${sH}"`,
+        bestYield: cut.bestYield,
+        selectedLayout: cut.selectedLayout,
+        grid: cut.grid,
+      };
+    }
+  });
+
+  return optimal;
 }

@@ -42,3 +42,18 @@ export function requireAdmin(req, res, next) {
   });
 }
 
+/**
+ * Manager or Admin authorization middleware - allows 'admin' and 'manager' roles (Part 3.2)
+ */
+export function requireManagerOrAdmin(req, res, next) {
+  requireAuth(req, res, () => {
+    if (req.user && (req.user.role === "admin" || req.user.role === "manager")) {
+      return next();
+    }
+    return res.status(403).json({
+      success: false,
+      message: "Access forbidden. Manager or Administrator privileges are required for this action.",
+    });
+  });
+}
+

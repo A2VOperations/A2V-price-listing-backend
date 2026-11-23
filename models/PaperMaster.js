@@ -34,12 +34,23 @@ const paperMasterSchema = new mongoose.Schema(
     colour: {
       type: String,
       required: true,
-      enum: ["White", "Yellow", "Pink", "Custom"],
+      trim: true,
       default: "White",
     },
     paperType: {
       type: String,
-      default: "Maplitho", // "Newspaper", "Maplitho", "Bond", "Sunshine", "Art Paper"
+      trim: true,
+      default: "Maplitho", // e.g. "Newspaper", "Maplitho", "Bond", "Sunshine", "Art Paper"
+    },
+    looseSheetRate: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    reamRate: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     isDigitalCompatible: {
       type: Boolean,

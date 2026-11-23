@@ -70,7 +70,7 @@ export async function createUser(req, res) {
     const cleanUsername = String(username).trim().toLowerCase();
     const cleanPassword = String(password).trim();
     const cleanName = String(name || "").trim();
-    const cleanRole = role === "admin" ? "admin" : "user";
+    const cleanRole = ["admin", "manager", "user"].includes(role) ? role : "user";
 
     if (cleanUsername.length < 3) {
       return res.status(400).json({
@@ -152,7 +152,7 @@ export async function updateUser(req, res) {
       user.email = String(email).trim().toLowerCase();
     }
 
-    if (role !== undefined && ["admin", "user"].includes(role)) {
+    if (role !== undefined && ["admin", "manager", "user"].includes(role)) {
       user.role = role;
     }
 
