@@ -71,6 +71,18 @@ const a5Test = calculateCuttingYield({
 });
 assert(a5Test.bestYield === 8, "A5 (5.83x8.27) on 18x22 must yield 8 pieces");
 
+// Combination cutting test (Image 1 reference: 8.5" x 14" on 23" x 36")
+// Pure vertical = 4, Pure horizontal = 4.
+// Combination cutting (4 vertical + 2 horizontal) = 6 pieces!
+const comboTest = calculateCuttingYield({
+  sheetWidth: 23,
+  sheetHeight: 36,
+  productWidth: 8.5,
+  productHeight: 14,
+});
+assert(comboTest.bestYield === 6, "8.5x14 on 23x36 must yield 6 pieces via combination cutting (Image 1 reference)");
+assert(comboTest.selectedLayout === "combination", "Combination cut layout must be identified as 'combination'");
+
 // -------------------------------------------------------------
 // TEST 2: Paper Requirement & Wastage Engine (Part 5.4)
 // Example from Doc:

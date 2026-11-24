@@ -42,27 +42,27 @@ export function calculateCuttingYield({
       bestYield: 0,
       selectedLayout: "vertical",
       grid: { cols: 0, rows: 0 },
+      blocks: [],
+      cutType: "single-grid",
+      efficiency: 0,
+      dimensions: {
+        rawSheet: "0 × 0 inch",
+        product: "0 × 0 inch",
+      },
     };
   }
 
   const eps = 0.001;
-  // Vertical Layout: Sheet Width / Product Width, Sheet Height / Product Height
+
+  // 1. Pure Vertical Layout on given sheet (sW x sH)
   const vCols = Math.floor((sW + eps) / pW);
   const vRows = Math.floor((sH + eps) / pH);
   const verticalYield = vCols * vRows;
 
-  // Horizontal Layout: Sheet Width / Product Height, Sheet Height / Product Width
+  // 2. Pure Horizontal Layout on given sheet (sW x sH)
   const hCols = Math.floor((sW + eps) / pH);
   const hRows = Math.floor((sH + eps) / pW);
   const horizontalYield = hCols * hRows;
-
-  // Rule: Best Yield = MAX(Vertical, Horizontal). If equal, Vertical is Default.
-  let isHorizontalBetter = horizontalYield > verticalYield;
-  let bestYield = isHorizontalBetter ? horizontalYield : verticalYield;
-  let selectedLayout = isHorizontalBetter ? "horizontal" : "vertical";
-  let grid = isHorizontalBetter
-    ? { cols: hCols, rows: hRows }
-    : { cols: vCols, rows: vRows };
 
   // Commercial Print Shop Standard Rule: A4 on 18" x 22" sheet quarters into 4 pieces
   const isA4 =
@@ -74,22 +74,255 @@ export function calculateCuttingYield({
     (pW >= 4.0 && pW <= 6.0 && pH >= 8.0 && pH <= 9.5) ||
     (pH >= 4.0 && pH <= 6.0 && pW >= 8.0 && pW <= 9.5);
 
-  if (isA4 && ((sW === 18 && sH === 22) || (sW === 22 && sH === 18))) {
-    bestYield = 4;
-    selectedLayout = "vertical";
-    grid = { cols: 2, rows: 2 };
-  } else if (isA5 && ((sW === 18 && sH === 22) || (sW === 22 && sH === 18))) {
-    bestYield = 8;
-    selectedLayout = (pW === 4.5 || pH === 4.5) ? "vertical" : "horizontal";
-    grid = (pW === 4.5 || pH === 4.5) ? { cols: 4, rows: 2 } : { cols: 2, rows: 4 };
+  const is18x22 = (sW === 18 && sH === 22) || (sW === 22 && sH === 18);
+
+  if (isA4 && is18x22) {
+    return {
+      verticalYield: 4,
+      horizontalYield: 2,
+      bestYield: 4,
+      selectedLayout: "vertical",
+      grid: { cols: 2, rows: 2 },
+      blocks: [
+        {
+          id: "Block 1",
+          label: "A4 Standard Cut (4-Out)",
+          count: 4,
+          cols: 2,
+          rows: 2,
+          itemW: 9,
+          itemH: 11,
+          orientation: "vertical",
+          x: 0,
+          y: 0,
+          width: 18,
+          height: 22,
+        },
+      ],
+      cutType: "single-grid",
+      efficiency: Math.round(((4 * pW * pH) / (sW * sH)) * 1000) / 10,
+      dimensions: {
+        rawSheet: `${sW} × ${sH} inch`,
+        product: `${pW} × ${pH} inch`,
+      },
+    };
   }
+
+  if (isA5 && is18x22) {
+    const isV = pW === 4.5 || pH === 4.5;
+    return {
+      verticalYield: 8,
+      horizontalYield: 8,
+      bestYield: 8,
+      selectedLayout: isV ? "vertical" : "horizontal",
+      grid: isV ? { cols: 4, rows: 2 } : { cols: 2, rows: 4 },
+      blocks: [
+        {
+          id: "Block 1",
+          label: "A5 Standard Cut (8-Out)",
+          count: 8,
+          cols: isV ? 4 : 2,
+          rows: isV ? 2 : 4,
+          itemW: isV ? 4.5 : 5.5,
+          itemH: isV ? 11 : 9,
+          orientation: isV ? "vertical" : "horizontal",
+          x: 0,
+          y: 0,
+          width: 18,
+          height: 22,
+        },
+      ],
+      cutType: "single-grid",
+      efficiency: Math.round(((8 * pW * pH) / (sW * sH)) * 1000) / 10,
+      dimensions: {
+        rawSheet: `${sW} × ${sH} inch`,
+        product: `${pW} × ${pH} inch`,
+      },
+    };
+  }
+
+  // 3. Maximized Guillotine Combination Cutting Optimizer
+  // Baseline: pure vertical or pure horizontal
+  const isHorizBetter = horizontalYield > verticalYield;
+  let best = {
+    yield: isHorizBetter ? horizontalYield : verticalYield,
+    selectedLayout: isHorizBetter ? "horizontal" : "vertical",
+    cutType: "single-grid",
+    grid: isHorizBetter ? { cols: hCols, rows: hRows } : { cols: vCols, rows: vRows },
+    sheetW: sW,
+    sheetH: sH,
+    blocks: [
+      {
+        id: "Block 1",
+        label: isHorizBetter ? "Horizontal Grid" : "Vertical Grid",
+        count: isHorizBetter ? horizontalYield : verticalYield,
+        cols: isHorizBetter ? hCols : vCols,
+        rows: isHorizBetter ? hRows : vRows,
+        itemW: isHorizBetter ? pH : pW,
+        itemH: isHorizBetter ? pW : pH,
+        orientation: isHorizBetter ? "horizontal" : "vertical",
+        x: 0,
+        y: 0,
+        width: isHorizBetter ? hCols * pH : vCols * pW,
+        height: isHorizBetter ? hRows * pW : vRows * pH,
+      },
+    ],
+  };
+
+  // Test both sheet orientations on the cutter bed: (sW x sH) and transposed (sH x sW)
+  const sheetOrientations = [
+    { w: Math.max(sW, sH), h: Math.min(sW, sH) },
+    { w: Math.min(sW, sH), h: Math.max(sW, sH) },
+  ];
+
+  for (const s of sheetOrientations) {
+    const W = s.w;
+    const H = s.h;
+
+    // Test both initial item orientations:
+    // orient 0: itemA = pW x pH, itemB = pH x pW
+    // orient 1: itemA = pH x pW, itemB = pW x pH
+    for (let orient = 0; orient < 2; orient++) {
+      const wA = orient === 0 ? pW : pH;
+      const hA = orient === 0 ? pH : pW;
+      const wB = hA;
+      const hB = wA;
+
+      // Pattern A: Horizontal Primary Cut across W at y = H1
+      const maxR1 = Math.floor((H + eps) / hA);
+      for (let r1 = 1; r1 <= maxR1; r1++) {
+        const H1 = r1 * hA;
+        const c1 = Math.floor((W + eps) / wA);
+        const count1 = r1 * c1;
+
+        const remH = H - H1;
+        const r2 = Math.floor((remH + eps) / hB);
+        const c2 = Math.floor((W + eps) / wB);
+        const count2 = r2 * c2;
+
+        const total = count1 + count2;
+        if (total > best.yield) {
+          best = {
+            yield: total,
+            selectedLayout: count2 > 0 ? "combination" : (orient === 0 ? "vertical" : "horizontal"),
+            cutType: count2 > 0 ? "horizontal-split" : "single-grid",
+            grid: { cols: Math.max(c1, c2), rows: r1 + r2 },
+            sheetW: W,
+            sheetH: H,
+            blocks: [
+              {
+                id: "Block 1 (Top)",
+                label: `Top: ${count1} Pcs (${orient === 0 ? "Vertical" : "Horizontal"} ${wA}×${hA}")`,
+                count: count1,
+                cols: c1,
+                rows: r1,
+                itemW: wA,
+                itemH: hA,
+                orientation: orient === 0 ? "vertical" : "horizontal",
+                x: 0,
+                y: 0,
+                width: c1 * wA,
+                height: H1,
+              },
+              ...(count2 > 0
+                ? [
+                    {
+                      id: "Block 2 (Bottom)",
+                      label: `Bottom: ${count2} Pcs (${orient === 0 ? "Horizontal" : "Vertical"} ${wB}×${hB}")`,
+                      count: count2,
+                      cols: c2,
+                      rows: r2,
+                      itemW: wB,
+                      itemH: hB,
+                      orientation: orient === 0 ? "horizontal" : "vertical",
+                      x: 0,
+                      y: H1,
+                      width: c2 * wB,
+                      height: r2 * hB,
+                    },
+                  ]
+                : []),
+            ],
+          };
+        }
+      }
+
+      // Pattern B: Vertical Primary Cut down H at x = W1
+      const maxC1 = Math.floor((W + eps) / wA);
+      for (let c1 = 1; c1 <= maxC1; c1++) {
+        const W1 = c1 * wA;
+        const r1 = Math.floor((H + eps) / hA);
+        const count1 = c1 * r1;
+
+        const remW = W - W1;
+        const c2 = Math.floor((remW + eps) / wB);
+        const r2 = Math.floor((H + eps) / hB);
+        const count2 = c2 * r2;
+
+        const total = count1 + count2;
+        if (total > best.yield) {
+          best = {
+            yield: total,
+            selectedLayout: count2 > 0 ? "combination" : (orient === 0 ? "vertical" : "horizontal"),
+            cutType: count2 > 0 ? "vertical-split" : "single-grid",
+            grid: { cols: c1 + c2, rows: Math.max(r1, r2) },
+            sheetW: W,
+            sheetH: H,
+            blocks: [
+              {
+                id: "Block 1 (Left)",
+                label: `Left: ${count1} Pcs (${orient === 0 ? "Vertical" : "Horizontal"} ${wA}×${hA}")`,
+                count: count1,
+                cols: c1,
+                rows: r1,
+                itemW: wA,
+                itemH: hA,
+                orientation: orient === 0 ? "vertical" : "horizontal",
+                x: 0,
+                y: 0,
+                width: W1,
+                height: r1 * hA,
+              },
+              ...(count2 > 0
+                ? [
+                    {
+                      id: "Block 2 (Right)",
+                      label: `Right: ${count2} Pcs (${orient === 0 ? "Horizontal" : "Vertical"} ${wB}×${hB}")`,
+                      count: count2,
+                      cols: c2,
+                      rows: r2,
+                      itemW: wB,
+                      itemH: hB,
+                      orientation: orient === 0 ? "horizontal" : "vertical",
+                      x: W1,
+                      y: 0,
+                      width: c2 * wB,
+                      height: r2 * hB,
+                    },
+                  ]
+                : []),
+            ],
+          };
+        }
+      }
+    }
+  }
+
+  const efficiency = Math.round(((best.yield * pW * pH) / (sW * sH)) * 1000) / 10;
 
   return {
     verticalYield,
     horizontalYield,
-    bestYield,
-    selectedLayout,
-    grid,
+    bestYield: best.yield,
+    selectedLayout: best.selectedLayout,
+    cutType: best.cutType,
+    grid: best.grid,
+    blocks: best.blocks,
+    efficiency,
+    cuttingSheetDimensions: {
+      width: best.sheetW,
+      height: best.sheetH,
+    },
     dimensions: {
       rawSheet: `${sW} × ${sH} inch`,
       product: `${pW} × ${pH} inch`,
