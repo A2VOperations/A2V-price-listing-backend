@@ -24,7 +24,12 @@
  * @param {number} params.productHeight - Finished product height in inches (e.g. 11)
  * @returns {Object} Yield result with selected layout and piece count
  */
-export function calculateCuttingYield({ sheetWidth, sheetHeight, productWidth, productHeight }) {
+export function calculateCuttingYield({
+  sheetWidth,
+  sheetHeight,
+  productWidth,
+  productHeight,
+}) {
   const sW = Number(sheetWidth);
   const sH = Number(sheetHeight);
   const pW = Number(productWidth);
@@ -40,14 +45,15 @@ export function calculateCuttingYield({ sheetWidth, sheetHeight, productWidth, p
     };
   }
 
+  const eps = 0.001;
   // Vertical Layout: Sheet Width / Product Width, Sheet Height / Product Height
-  const vCols = Math.floor(sW / pW);
-  const vRows = Math.floor(sH / pH);
+  const vCols = Math.floor((sW + eps) / pW);
+  const vRows = Math.floor((sH + eps) / pH);
   const verticalYield = vCols * vRows;
 
   // Horizontal Layout: Sheet Width / Product Height, Sheet Height / Product Width
-  const hCols = Math.floor(sW / pH);
-  const hRows = Math.floor(sH / pW);
+  const hCols = Math.floor((sW + eps) / pH);
+  const hRows = Math.floor((sH + eps) / pW);
   const horizontalYield = hCols * hRows;
 
   // Rule: Best Yield = MAX(Vertical, Horizontal). If equal, Vertical is Default.
@@ -58,13 +64,24 @@ export function calculateCuttingYield({ sheetWidth, sheetHeight, productWidth, p
     ? { cols: hCols, rows: hRows }
     : { cols: vCols, rows: vRows };
 
-  // Commercial Print Shop Standard Rule: A4 (approx 8.25" x 11.7") on 18" x 22" sheet quarters into 4 pieces
-  const isA4 = (pW >= 8.0 && pW <= 8.5 && pH >= 11.0 && pH <= 12.0) ||
-               (pH >= 8.0 && pH <= 8.5 && pW >= 11.0 && pW <= 12.0);
+  // Commercial Print Shop Standard Rule: A4 on 18" x 22" sheet quarters into 4 pieces
+  const isA4 =
+    (pW >= 8.0 && pW <= 9.0 && pH >= 10.5 && pH <= 12.0) ||
+    (pH >= 8.0 && pH <= 9.0 && pW >= 10.5 && pW <= 12.0);
+
+  // Commercial Print Shop Standard Rule: A5 (half of A4) on 18" x 22" sheet divides into 8 pieces
+  const isA5 =
+    (pW >= 4.0 && pW <= 6.0 && pH >= 8.0 && pH <= 9.5) ||
+    (pH >= 4.0 && pH <= 6.0 && pW >= 8.0 && pW <= 9.5);
+
   if (isA4 && ((sW === 18 && sH === 22) || (sW === 22 && sH === 18))) {
     bestYield = 4;
     selectedLayout = "vertical";
     grid = { cols: 2, rows: 2 };
+  } else if (isA5 && ((sW === 18 && sH === 22) || (sW === 22 && sH === 18))) {
+    bestYield = 8;
+    selectedLayout = (pW === 4.5 || pH === 4.5) ? "vertical" : "horizontal";
+    grid = (pW === 4.5 || pH === 4.5) ? { cols: 4, rows: 2 } : { cols: 2, rows: 4 };
   }
 
   return {
@@ -156,9 +173,10 @@ export function calculateMiniOffsetCost({
     if (ply.printingMethod === "digital") return;
 
     const plyName = ply.colour || `Ply ${plyIdx + 1}`;
-    const frontColours = Array.isArray(ply.inkColoursFront) && ply.inkColoursFront.length > 0
-      ? ply.inkColoursFront
-      : ["Black"];
+    const frontColours =
+      Array.isArray(ply.inkColoursFront) && ply.inkColoursFront.length > 0
+        ? ply.inkColoursFront
+        : ["Black"];
     const backColours = Array.isArray(ply.inkColoursBack)
       ? ply.inkColoursBack
       : [];
@@ -237,20 +255,23 @@ export function calculateDigitalCost({
 }) {
   // Business Rule: Yellow and Pink cannot use Digital Printing
   if (paperColour && paperColour.toLowerCase() !== "white") {
-    throw new Error("Digital Printing is strictly prohibited on Yellow and Pink paper as per business rules.");
+    throw new Error(
+      "Digital Printing is strictly prohibited on Yellow and Pink paper as per business rules.",
+    );
   }
 
   const sheets = Math.max(0, Number(digitalSheetsCount) || 0);
   const is13x19 = digitalSheetSize === "13x19";
 
   // Default rates from Handover Part 8.2
-  const defaultRate = is13x19
-    ? (isBothSides ? 9 : 7)
-    : (isBothSides ? 7 : 6);
+  const defaultRate = is13x19 ? (isBothSides ? 9 : 7) : isBothSides ? 7 : 6;
 
-  const ratePerSheet = customRates && customRates[digitalSheetSize]
-    ? (isBothSides ? customRates[digitalSheetSize].both : customRates[digitalSheetSize].front)
-    : defaultRate;
+  const ratePerSheet =
+    customRates && customRates[digitalSheetSize]
+      ? isBothSides
+        ? customRates[digitalSheetSize].both
+        : customRates[digitalSheetSize].front
+      : defaultRate;
 
   const digitalTotalCost = sheets * ratePerSheet;
 
@@ -365,7 +386,8 @@ export function calculateCommercialPrintOrder({
     const paperReq = calculatePaperRequirement({
       totalPages: totalPlyPages,
       yieldPerSheet: cutting.bestYield,
-      purchaseMode: rawConfig.purchaseMode || (totalPlyPages >= 500 ? "ream" : "loose"),
+      purchaseMode:
+        rawConfig.purchaseMode || (totalPlyPages >= 500 ? "ream" : "loose"),
     });
 
     // Rate calculation (Commercial Paper Dealer Rule)
@@ -376,7 +398,7 @@ export function calculateCommercialPrintOrder({
     const grossSheets = paperReq.grossSheetsToPurchase;
     const fullReams = Math.floor(grossSheets / 500);
     const remainingLoose = grossSheets % 500;
-    const plyPaperCost = (fullReams * reamRate) + (remainingLoose * looseRate);
+    const plyPaperCost = fullReams * reamRate + remainingLoose * looseRate;
 
     totalPaperCost += plyPaperCost;
 
@@ -400,7 +422,9 @@ export function calculateCommercialPrintOrder({
   }
 
   // 2. Mini Offset Printing Calculations
-  const offsetPlies = resolvedPlies.filter((p) => p.printingMethod === "mini_offset");
+  const offsetPlies = resolvedPlies.filter(
+    (p) => p.printingMethod === "mini_offset",
+  );
   let offsetDetails = null;
   if (offsetPlies.length > 0) {
     // Machine prints the cut finished sheets (e.g. 10 books * 100 pages = 1000 A4 impressions per ply)
@@ -416,7 +440,9 @@ export function calculateCommercialPrintOrder({
   }
 
   // 3. Digital Printing Calculations
-  const digitalPlies = resolvedPlies.filter((p) => p.printingMethod === "digital");
+  const digitalPlies = resolvedPlies.filter(
+    (p) => p.printingMethod === "digital",
+  );
   let digitalDetails = null;
   if (digitalPlies.length > 0) {
     let sumDigitalCost = 0;
@@ -428,8 +454,10 @@ export function calculateCommercialPrintOrder({
         productWidth: finishedWidth,
         productHeight: finishedHeight,
       });
-      const digSheets = Math.ceil((qty * pages) / Math.max(1, digYield.bestYield));
-      const isBoth = (dply.inkColoursBack && dply.inkColoursBack.length > 0);
+      const digSheets = Math.ceil(
+        (qty * pages) / Math.max(1, digYield.bestYield),
+      );
+      const isBoth = dply.inkColoursBack && dply.inkColoursBack.length > 0;
       const digCost = calculateDigitalCost({
         digitalSheetSize: "12x18",
         isBothSides: isBoth,
@@ -455,24 +483,28 @@ export function calculateCommercialPrintOrder({
   const transportationCost = 50;
   const totalVendorCost = Math.round(
     totalPaperCost +
-    totalMasterCost +
-    totalOffsetRunCost +
-    totalDigitalCost +
-    finishing.totalFinishingCost +
-    transportationCost
+      totalMasterCost +
+      totalOffsetRunCost +
+      totalDigitalCost +
+      finishing.totalFinishingCost +
+      transportationCost,
   );
 
   // 6. Recommended Selling Price based on target margin
-  const recommendedSellingPrice = Math.round(totalVendorCost / (1 - (targetMarginPercent / 100)));
-  const finalSellingPrice = negotiatedSellingPrice !== null && !isNaN(Number(negotiatedSellingPrice))
-    ? Math.max(0, Number(negotiatedSellingPrice))
-    : recommendedSellingPrice;
+  const recommendedSellingPrice = Math.round(
+    totalVendorCost / (1 - targetMarginPercent / 100),
+  );
+  const finalSellingPrice =
+    negotiatedSellingPrice !== null && !isNaN(Number(negotiatedSellingPrice))
+      ? Math.max(0, Number(negotiatedSellingPrice))
+      : recommendedSellingPrice;
 
   // Margin Evaluation
   const netMargin = Math.round(finalSellingPrice - totalVendorCost);
-  const actualMarginPercent = finalSellingPrice > 0
-    ? Number(((netMargin / finalSellingPrice) * 100).toFixed(1))
-    : 0;
+  const actualMarginPercent =
+    finalSellingPrice > 0
+      ? Number(((netMargin / finalSellingPrice) * 100).toFixed(1))
+      : 0;
 
   // Taxes (GST default 0 as requested)
   const effectiveGstRate = Number(gstRate) || 0;
@@ -504,9 +536,11 @@ export function calculateCommercialPrintOrder({
       layer: `Layer ${p.plyIndex} (${p.colour})`,
       gsm: `${p.gsm} GSM`,
       colour: p.colour,
-      printing: p.printingMethod === "digital" ? "Digital Print" : "Mini Offset Print",
+      printing:
+        p.printingMethod === "digital" ? "Digital Print" : "Mini Offset Print",
       frontColours: p.inkColoursFront.join(", "),
-      backColours: p.inkColoursBack.length > 0 ? p.inkColoursBack.join(", ") : "None",
+      backColours:
+        p.inkColoursBack.length > 0 ? p.inkColoursBack.join(", ") : "None",
     })),
     pricing: {
       subtotal: finalSellingPrice,
@@ -558,13 +592,25 @@ export function calculateCommercialPrintOrder({
  * 8. Automatic Optimal Raw Sheet Selection Engine
  * Evaluates candidate raw sheets and selects the sheet yielding maximum cut pieces with least wastage.
  */
-export function findOptimalRawSheet({ finishedWidth, finishedHeight, candidateSheets = [] }) {
+export function findOptimalRawSheet({
+  finishedWidth,
+  finishedHeight,
+  candidateSheets = [],
+}) {
   const pW = Number(finishedWidth) || 4.5;
   const pH = Number(finishedHeight) || 11;
   const defaultSheets = [
-    { rawWidthInch: 18, rawHeightInch: 22, name: '18" × 22" (Standard Mini Offset Sheet)' },
+    {
+      rawWidthInch: 18,
+      rawHeightInch: 22,
+      name: '18" × 22" (Standard Mini Offset Sheet)',
+    },
     { rawWidthInch: 23, rawHeightInch: 36, name: '23" × 36" (Large Sheet)' },
-    { rawWidthInch: 25, rawHeightInch: 36, name: '25" × 36" (Full Commercial Sheet)' },
+    {
+      rawWidthInch: 25,
+      rawHeightInch: 36,
+      name: '25" × 36" (Full Commercial Sheet)',
+    },
   ];
   const sheets = candidateSheets.length > 0 ? candidateSheets : defaultSheets;
 
@@ -575,12 +621,20 @@ export function findOptimalRawSheet({ finishedWidth, finishedHeight, candidateSh
   sheets.forEach((s) => {
     const sW = Number(s.rawWidthInch || s.rawSheetWidth || s.width || 18);
     const sH = Number(s.rawHeightInch || s.rawSheetHeight || s.height || 22);
-    const cut = calculateCuttingYield({ sheetWidth: sW, sheetHeight: sH, productWidth: pW, productHeight: pH });
+    const cut = calculateCuttingYield({
+      sheetWidth: sW,
+      sheetHeight: sH,
+      productWidth: pW,
+      productHeight: pH,
+    });
     const sheetArea = sW * sH;
     const usedArea = cut.bestYield * pW * pH;
     const wasteRatio = sheetArea > 0 ? (sheetArea - usedArea) / sheetArea : 1;
 
-    if (cut.bestYield > maxYield || (cut.bestYield === maxYield && wasteRatio < minWaste)) {
+    if (
+      cut.bestYield > maxYield ||
+      (cut.bestYield === maxYield && wasteRatio < minWaste)
+    ) {
       maxYield = cut.bestYield;
       minWaste = wasteRatio;
       optimal = {

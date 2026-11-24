@@ -53,6 +53,24 @@ const tieTest = calculateCuttingYield({
 });
 assert(tieTest.selectedLayout === "vertical", "On yield tie, default layout must be 'vertical'");
 
+// A4 yield test on 18x22 -> must be 4 pieces (8.27" x 11.69")
+const a4Test = calculateCuttingYield({
+  sheetWidth: 18,
+  sheetHeight: 22,
+  productWidth: 8.27,
+  productHeight: 11.69,
+});
+assert(a4Test.bestYield === 4, "A4 (8.27x11.69) on 18x22 must yield 4 pieces");
+
+// A5 (half A4) yield test on 18x22 -> must be 8 pieces (5.83" x 8.27")
+const a5Test = calculateCuttingYield({
+  sheetWidth: 18,
+  sheetHeight: 22,
+  productWidth: 5.83,
+  productHeight: 8.27,
+});
+assert(a5Test.bestYield === 8, "A5 (5.83x8.27) on 18x22 must yield 8 pieces");
+
 // -------------------------------------------------------------
 // TEST 2: Paper Requirement & Wastage Engine (Part 5.4)
 // Example from Doc:
