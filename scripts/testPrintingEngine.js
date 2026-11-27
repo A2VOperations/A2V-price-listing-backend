@@ -5,7 +5,16 @@ import {
   calculateDigitalCost,
   calculateBindingAndFinishingCost,
   calculateCommercialPrintOrder,
+  findOptimalRawSheet,
+  consolidatePaperPurchases,
+  calculateGroupWastage,
+  calculateReamAndLooseCost,
+  selectLeastWastageRawSheet,
 } from "../services/printingCalcEngine.js";
+import {
+  calculateSalesBillBookQuote,
+  selectLeastWastageSheetFromDb,
+} from "../../frontend/src/utils/salesBillBookEngine.js";
 
 console.log("=================================================");
 console.log("🧪 RUNNING A2V PRINTS CALCULATION ENGINE TEST SUITE");
@@ -226,6 +235,451 @@ assert(completeOrder.salesExecutiveView.commercialFinancials === undefined, "Sal
 assert(completeOrder.managerProductionView.internalCostBreakdown.totalVendorProductionCost > 0, "Manager view contains total vendor cost");
 assert(completeOrder.managerProductionView.commercialFinancials.netProfitMargin !== undefined, "Manager view contains net profit margin");
 assert(completeOrder.managerProductionView.commercialFinancials.profitMarginPercent !== undefined, "Manager view contains margin %");
+
+// -------------------------------------------------------------
+// TEST 7: Regression Tests for Gap Analysis Fixes
+// -------------------------------------------------------------
+const nonA5Test = calculateCuttingYield({ sheetWidth: 18, sheetHeight: 22, productWidth: 6.0, productHeight: 9.5 });
+assert(nonA5Test.bestYield === 6 && nonA5Test.efficiency <= 100, "6.0x9.5 on 18x22 must yield 6 (not false A5 8-out)");
+
+const zeroWastageTest = calculatePaperRequirement({ totalPages: 1000, yieldPerSheet: 8, wastageRules: { loose: 0, ream: 0 } });
+assert(zeroWastageTest.wastageSheets === 0 && zeroWastageTest.grossSheetsToPurchase === 125, "0 wastage rule must be respected");
+
+const zeroPagesTest = calculatePaperRequirement({ totalPages: 0, yieldPerSheet: 8 });
+assert(zeroPagesTest.grossSheetsToPurchase === 0, "0 pages must require 0 gross sheets");
+
+const zeroOffsetTest = calculateMiniOffsetCost({ plies: [{ printingMethod: "digital" }], impressionsPerPly: 500 });
+assert(zeroOffsetTest.masterCount === 0 && zeroOffsetTest.offsetTotalCost === 0, "All-digital plies must charge ₹0 offset cost");
+
+let threwEmptyColor = false;
+try {
+  calculateDigitalCost({ digitalSheetSize: "12x18", digitalSheetsCount: 10, paperColour: "" });
+} catch {
+  threwEmptyColor = true;
+}
+assert(threwEmptyColor, "Digital printing with empty paperColour must throw");
+
+let threwBadDigitalSize = false;
+try {
+  calculateDigitalCost({ digitalSheetSize: "A4", digitalSheetsCount: 10, paperColour: "White" });
+} catch {
+  threwBadDigitalSize = true;
+}
+assert(threwBadDigitalSize, "Digital printing with unsupported sheet size must throw");
+
+const optSheet = findOptimalRawSheet({ finishedWidth: 4.5, finishedHeight: 11, totalPages: 1000 });
+assert(optSheet.rawWidthInch === 18 && optSheet.rawHeightInch === 22, "4.5x11 optimal cost sheet must be 18x22");
+
+const smallOrder = calculateCommercialPrintOrder({
+  quantity: 5,
+  pagesPerBook: 100,
+  finishedWidth: 4.5,
+  finishedHeight: 11,
+  plyCount: 1,
+  plyConfigurations: [{ colour: "White", gsm: 64, rawWidth: 18, rawHeight: 22, looseSheetRate: 1.3, reamRate: 650 }],
+});
+assert(smallOrder.managerProductionView.productionTechnicalDetails.resolvedPlies[0].wastageSheets === 5, "500 pages (63 raw sheets) must use +5 loose wastage, not +10 ream");
+
+const consolidated = consolidatePaperPurchases([
+  { status: "approved", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 300, looseSheetRate: 1.5, reamRate: 700 }] },
+  { status: "job_created", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 300, looseSheetRate: 1.5, reamRate: 700 }] },
+]);
+assert(
+  consolidated.items[0].consolidatedNet === 600 &&
+    consolidated.items[0].wastageSheets === 10 &&
+    consolidated.items[0].consolidatedGross === 610 &&
+    consolidated.items[0].reams === 1 &&
+    consolidated.items[0].looseSheets === 110,
+  "Consolidating 300+300 net sheets must yield 600 net + 10 wastage = 610 gross (1 ream + 110 loose)"
+);
+
+// -------------------------------------------------------------
+// TEST 8: Approved Wastage Rule — Thresholds, Multi-Ply, Consolidation, Integrity & Parity
+// -------------------------------------------------------------
+// A. Threshold tests
+assert(calculateGroupWastage(0) === 0, "Threshold: 0 net sheets -> 0 wastage");
+assert(calculateGroupWastage(1) === 5, "Threshold: 1 net sheet -> 5 wastage");
+assert(calculateGroupWastage(499) === 5, "Threshold: 499 net sheets -> 5 wastage");
+assert(calculateGroupWastage(500) === 10, "Threshold: 500 net sheets -> 10 wastage");
+assert(calculateGroupWastage(501) === 10, "Threshold: 501 net sheets -> 10 wastage");
+assert(calculateGroupWastage(1000) === 10, "Threshold: 1,000 net sheets -> 10 wastage");
+assert(calculateGroupWastage(2000) === 10, "Threshold: 2,000 net sheets -> 10 wastage");
+
+const emptyOrderReq = calculatePaperRequirement({ totalPages: 0, yieldPerSheet: 8 });
+assert(emptyOrderReq.wastageSheets === 0 && emptyOrderReq.grossSheetsToPurchase === 0, "Empty requirement: 0 wastage and 0 gross");
+
+// B. Same-paper multi-ply tests
+// B1: 250 + 250 same specs -> 500 net + 10 wastage = 510 gross
+const samePaper500 = calculateCommercialPrintOrder({
+  quantity: 20,
+  pagesPerBook: 100,
+  finishedWidth: 4.5,
+  finishedHeight: 11,
+  plyCount: 2,
+  plyConfigurations: [
+    { colour: "White", paperType: "Maplitho", gsm: 70, rawWidth: 18, rawHeight: 22, looseSheetRate: 1.5, reamRate: 700 },
+    { colour: "White", paperType: "Maplitho", gsm: 70, rawWidth: 18, rawHeight: 22, looseSheetRate: 1.5, reamRate: 700 },
+  ],
+});
+const sp500Grp = samePaper500.managerProductionView.productionTechnicalDetails.paperGroups[0];
+assert(
+  sp500Grp.groupNetSheets === 500 &&
+    sp500Grp.wastageSheets === 10 &&
+    sp500Grp.groupGrossSheets === 510 &&
+    sp500Grp.reams === 1 &&
+    sp500Grp.looseSheets === 10 &&
+    sp500Grp.groupCost === 715,
+  "2-ply same paper (250+250) -> 500 net + 10 wastage = 510 gross (1 ream + 10 loose = ₹715)"
+);
+
+// B2: 200 + 200 same specs -> 400 net + 5 wastage = 405 gross
+const samePaper400 = calculateCommercialPrintOrder({
+  quantity: 16,
+  pagesPerBook: 100,
+  finishedWidth: 4.5,
+  finishedHeight: 11,
+  plyCount: 2,
+  plyConfigurations: [
+    { colour: "White", paperType: "Maplitho", gsm: 70, rawWidth: 18, rawHeight: 22, looseSheetRate: 1.5, reamRate: 700 },
+    { colour: "White", paperType: "Maplitho", gsm: 70, rawWidth: 18, rawHeight: 22, looseSheetRate: 1.5, reamRate: 700 },
+  ],
+});
+const sp400Grp = samePaper400.managerProductionView.productionTechnicalDetails.paperGroups[0];
+assert(
+  sp400Grp.groupNetSheets === 400 && sp400Grp.wastageSheets === 5 && sp400Grp.groupGrossSheets === 405,
+  "2-ply same paper (200+200) -> 400 net + 5 wastage = 405 gross"
+);
+
+// B3: 250 White + 250 Yellow, same GSM -> two separate groups, each +5
+const diffColour250 = calculateCommercialPrintOrder({
+  quantity: 20,
+  pagesPerBook: 100,
+  finishedWidth: 4.5,
+  finishedHeight: 11,
+  plyCount: 2,
+  plyConfigurations: [
+    { colour: "White", paperType: "Maplitho", gsm: 70, rawWidth: 18, rawHeight: 22, looseSheetRate: 1.5, reamRate: 700 },
+    { colour: "Yellow", paperType: "Maplitho", gsm: 70, rawWidth: 18, rawHeight: 22, looseSheetRate: 1.6, reamRate: 750 },
+  ],
+});
+assert(
+  diffColour250.managerProductionView.productionTechnicalDetails.paperGroups.length === 2 &&
+    diffColour250.managerProductionView.productionTechnicalDetails.paperGroups.every((g) => g.wastageSheets === 5 && g.groupGrossSheets === 255),
+  "250 White + 250 Yellow same GSM -> two separate groups, each +5 wastage (255 gross)"
+);
+
+// B4: 250 64 GSM + 250 70 GSM -> two separate groups
+const diffGsm250 = calculateCommercialPrintOrder({
+  quantity: 20,
+  pagesPerBook: 100,
+  finishedWidth: 4.5,
+  finishedHeight: 11,
+  plyCount: 2,
+  plyConfigurations: [
+    { colour: "White", paperType: "Maplitho", gsm: 64, rawWidth: 18, rawHeight: 22, looseSheetRate: 1.4, reamRate: 650 },
+    { colour: "White", paperType: "Maplitho", gsm: 70, rawWidth: 18, rawHeight: 22, looseSheetRate: 1.5, reamRate: 700 },
+  ],
+});
+assert(
+  diffGsm250.managerProductionView.productionTechnicalDetails.paperGroups.length === 2 &&
+    diffGsm250.managerProductionView.productionTechnicalDetails.paperGroups.every((g) => g.wastageSheets === 5),
+  "250 (64 GSM) + 250 (70 GSM) -> two separate groups, each +5 wastage"
+);
+
+// C. Consolidation tests
+const makeOrder125 = (status) => {
+  const res = calculateCommercialPrintOrder({
+    quantity: 10,
+    pagesPerBook: 100,
+    finishedWidth: 4.5,
+    finishedHeight: 11,
+    plyCount: 1,
+    plyConfigurations: [
+      { colour: "White", paperType: "Maplitho", gsm: 70, rawWidth: 18, rawHeight: 22, looseSheetRate: 1.5, reamRate: 700 },
+    ],
+  });
+  return { ...res, status };
+};
+
+const fourOrders = [
+  makeOrder125("confirmed"),
+  makeOrder125("approved"),
+  makeOrder125("job_created"),
+  makeOrder125("confirmed"),
+];
+const snapshotsBefore = fourOrders.map((o) => ({
+  pricing: JSON.stringify(o.salesExecutiveView.pricing),
+  paperCost: o.managerProductionView.internalCostBreakdown.paperCostTotal,
+  rawOrder: JSON.stringify(o.managerProductionView),
+}));
+
+const consol4 = consolidatePaperPurchases(
+  fourOrders.map((o) => ({ ...o.managerProductionView, status: o.status }))
+);
+assert(
+  consol4.items.length === 1 &&
+    consol4.items[0].consolidatedNet === 500 &&
+    consol4.items[0].wastageSheets === 10 &&
+    consol4.items[0].consolidatedGross === 510 &&
+    consol4.items[0].reams === 1 &&
+    consol4.items[0].looseSheets === 10 &&
+    consol4.consolidatedPaperCostTotal === 715 &&
+    consol4.individualPaperCostTotal === 780 &&
+    consol4.procurementSavings === 65,
+  "4 confirmed orders of 125 net -> consolidated 500 net + 10 wastage = 510 gross (₹715, ₹65 savings)"
+);
+
+// C2: 3 confirmed orders of 100 net each -> 300 net + 5 = 305 gross
+const consol3 = consolidatePaperPurchases([
+  { status: "confirmed", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 100, looseSheetRate: 1.5, reamRate: 700 }] },
+  { status: "approved", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 100, looseSheetRate: 1.5, reamRate: 700 }] },
+  { status: "job_created", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 100, looseSheetRate: 1.5, reamRate: 700 }] },
+]);
+assert(
+  consol3.items[0].consolidatedNet === 300 &&
+    consol3.items[0].wastageSheets === 5 &&
+    consol3.items[0].consolidatedGross === 305,
+  "3 confirmed orders of 100 net -> consolidated 300 net + 5 wastage = 305 gross"
+);
+
+// C3: Draft, sent_to_client, negotiating, cancelled, rejected, dispatched, and missing status excluded
+const consolFiltered = consolidatePaperPurchases([
+  { status: "confirmed", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 100 }] },
+  { status: "draft", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 500 }] },
+  { status: "sent_to_client", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 500 }] },
+  { status: "negotiating", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 500 }] },
+  { status: "cancelled", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 500 }] },
+  { status: "rejected", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 500 }] },
+  { status: "dispatched", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 500 }] },
+  { plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 500 }] },
+]);
+assert(
+  consolFiltered.items.length === 1 && consolFiltered.items[0].consolidatedNet === 100,
+  "Draft, sent_to_client, negotiating, cancelled, rejected, dispatched, and missing-status orders must be excluded"
+);
+
+// C3b: Prevent duplicate counting when Quotation (job_created) and JobCard share quoteRef
+const consolDedupe = consolidatePaperPurchases([
+  { quoteRef: "Q-A2V-2026-0001", status: "job_created", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 250 }] },
+  { jobId: "JOB-2026-0001", quoteRef: "Q-A2V-2026-0001", status: "created", plyConfigurations: [{ rawWidth: 18, rawHeight: 22, paperType: "Maplitho", gsm: 70, colour: "White", netSheetsRequired: 250 }] },
+]);
+assert(
+  consolDedupe.items[0].consolidatedNet === 250 && consolDedupe.items[0].wastageSheets === 5 && consolDedupe.items[0].consolidatedGross === 255,
+  "Quotation and JobCard sharing the same quoteRef must not be double-counted"
+);
+
+// C4 & C5: Equivalent size format grouping & separation of different specs
+const consolNorm = consolidatePaperPurchases([
+  { status: "confirmed", plyConfigurations: [{ rawSheetSize: "18x22", paperType: "  maplitho ", gsm: 70, colour: "white", netSheetsRequired: 200 }] },
+  { status: "confirmed", plyConfigurations: [{ rawSheetSize: "18 × 22 inch", paperType: "Maplitho", gsm: 70, colour: "WHITE", netSheetsRequired: 300 }] },
+  { status: "confirmed", plyConfigurations: [{ rawSheetSize: "18x22", paperType: "Maplitho", gsm: 64, colour: "White", netSheetsRequired: 100 }] },
+  { status: "confirmed", plyConfigurations: [{ rawSheetSize: "18x22", paperType: "Maplitho", gsm: 70, colour: "Yellow", netSheetsRequired: 100 }] },
+]);
+assert(
+  consolNorm.items.length === 3 &&
+    consolNorm.items.find((i) => i.gsm === 70 && i.colour.toLowerCase() === "white")?.consolidatedNet === 500,
+  "Equivalent size/case/whitespace specs group together; different GSM/colour stay separate"
+);
+
+// D. Data integrity tests: original orders unmutated & customer quotes unchanged
+fourOrders.forEach((o, idx) => {
+  assert(
+    JSON.stringify(o.salesExecutiveView.pricing) === snapshotsBefore[idx].pricing &&
+      o.managerProductionView.internalCostBreakdown.paperCostTotal === snapshotsBefore[idx].paperCost &&
+      JSON.stringify(o.managerProductionView) === snapshotsBefore[idx].rawOrder,
+    `Data integrity: Order ${idx + 1} quote, paper cost, and snapshot remain unmutated after consolidation`
+  );
+});
+
+// E. Frontend / Backend parity test (SalesBillBookEngine vs PrintingCalcEngine)
+const parityMasterPapers = [
+  { rawWidthInch: 18, rawHeightInch: 22, paperType: "Maplitho", gsm: 70, colour: "White", looseSheetRate: 1.5, reamRate: 700 },
+];
+const sbbParity = calculateSalesBillBookQuote(
+  {
+    sizeId: "a5",
+    quantity: 20,
+    setsPerBook: 100,
+    plies: [
+      { paperType: "Maplitho", gsm: 70, colour: "White" },
+      { paperType: "Maplitho", gsm: 70, colour: "White" },
+    ],
+    printProcess: "single_color_offset",
+    bindingType: "normal",
+    numbering: false,
+    salesMarginPercent: 25,
+  },
+  { papers: parityMasterPapers }
+);
+const backendParity = calculateCommercialPrintOrder({
+  quantity: 20,
+  pagesPerBook: 100,
+  finishedWidth: 5.83,
+  finishedHeight: 8.27,
+  plyCount: 2,
+  plyConfigurations: [
+    { paperType: "Maplitho", gsm: 70, colour: "White", rawWidth: 18, rawHeight: 22, looseSheetRate: 1.5, reamRate: 700 },
+    { paperType: "Maplitho", gsm: 70, colour: "White", rawWidth: 18, rawHeight: 22, looseSheetRate: 1.5, reamRate: 700 },
+  ],
+  bindingType: "Normal Binding",
+  bindingRate: 25,
+  hasNumbering: false,
+  targetMarginPercent: 25,
+});
+assert(
+  sbbParity.totalRawSheetsOrder === 510 &&
+    sbbParity.wastageSheetsTotal === 10 &&
+    sbbParity.totalPaperCost === backendParity.managerProductionView.internalCostBreakdown.paperCostTotal,
+  "Frontend SalesBillBookEngine and Backend PrintingCalcEngine must agree on 2-ply same-paper wastage (510 gross, ₹715)"
+);
+
+// F. Per-Ply Print Required / Blank Sheet tests
+const mixedPrintRequired = calculateCommercialPrintOrder({
+  quantity: 10,
+  pagesPerBook: 100,
+  finishedWidth: 4.5,
+  finishedHeight: 11,
+  plyCount: 2,
+  plyConfigurations: [
+    { paperType: "Maplitho", gsm: 70, colour: "White", rawWidth: 18, rawHeight: 22, looseSheetRate: 1.5, reamRate: 700, printRequired: true },
+    { paperType: "Maplitho", gsm: 70, colour: "Yellow", rawWidth: 18, rawHeight: 22, looseSheetRate: 1.6, reamRate: 750, printRequired: false },
+  ],
+  bindingType: "Normal Binding",
+  bindingRate: 25,
+});
+assert(
+  mixedPrintRequired.managerProductionView.internalCostBreakdown.masterCostTotal === 30 &&
+    mixedPrintRequired.managerProductionView.internalCostBreakdown.offsetRunCostTotal === 70 &&
+    mixedPrintRequired.salesExecutiveView.plySummary[1].printing === "No Print (Blank)",
+  "2-ply with Ply 2 printRequired=false must charge 1 run (₹70) instead of 2 runs (₹140)"
+);
+
+const allBlankOrder = calculateCommercialPrintOrder({
+  quantity: 10,
+  pagesPerBook: 100,
+  finishedWidth: 4.5,
+  finishedHeight: 11,
+  plyCount: 1,
+  plyConfigurations: [
+    { paperType: "Maplitho", gsm: 70, colour: "White", rawWidth: 18, rawHeight: 22, looseSheetRate: 1.5, reamRate: 700, printRequired: false },
+  ],
+});
+assert(
+  allBlankOrder.managerProductionView.internalCostBreakdown.masterCostTotal === 0 &&
+    allBlankOrder.managerProductionView.internalCostBreakdown.offsetRunCostTotal === 0 &&
+    allBlankOrder.managerProductionView.internalCostBreakdown.digitalCostTotal === 0 &&
+    allBlankOrder.managerProductionView.internalCostBreakdown.paperCostTotal === 195,
+  "All-blank order (printRequired=false) must charge ₹0 printing while keeping paper cost (₹195)"
+);
+
+const sbbMixedPrint = calculateSalesBillBookQuote(
+  {
+    sizeId: "a5",
+    quantity: 10,
+    setsPerBook: 100,
+    plies: [
+      { paperType: "Maplitho", gsm: 70, colour: "White", printRequired: true },
+      { paperType: "Maplitho", gsm: 70, colour: "Yellow", printRequired: false },
+    ],
+    printProcess: "single_color_offset",
+    bindingType: "normal",
+    numbering: false,
+  },
+  { papers: parityMasterPapers }
+);
+assert(
+  sbbMixedPrint.totalImpressions === 1000 && sbbMixedPrint.printingCost === 100,
+  "SalesBillBookEngine with Ply 2 printRequired=false must charge 1,000 impressions (₹30 + ₹70 = ₹100)"
+);
+
+// G. Exact Parity for A4 10 Books x 100 Sets 1-Ply Newspaper/Newsprint 49 GSM (Vendor Raw Price = ₹604)
+const sbbVendorRaw = calculateSalesBillBookQuote(
+  {
+    sizeId: "a4",
+    quantity: 10,
+    setsPerBook: 100,
+    plies: [{ paperType: "Newsprint", gsm: 49, colour: "White" }],
+    printProcess: "single_color_offset",
+    bindingType: "normal",
+    numbering: false,
+  },
+  {
+    papers: [
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "White", looseSheetRate: 0.8, reamRate: 330 },
+    ],
+  }
+);
+const backendVendorRaw = calculateCommercialPrintOrder({
+  quantity: 10,
+  pagesPerBook: 100,
+  finishedWidth: 8.27,
+  finishedHeight: 11.69,
+  plyCount: 1,
+  plyConfigurations: [
+    { paperType: "Newspaper", gsm: 49, colour: "White", rawWidth: 18, rawHeight: 22, looseSheetRate: 0.8, reamRate: 330 },
+  ],
+  bindingType: "Normal Binding",
+  bindingRate: 25,
+  hasNumbering: false,
+  targetMarginPercent: 0,
+});
+assert(
+  sbbVendorRaw.finalOrderPrice === 604 &&
+    backendVendorRaw.salesExecutiveView.pricing.subtotal === 604,
+  "SalesBillBookEngine and Backend PrintingCalcEngine must both yield ₹604 Vendor Raw Price for A4 10x100 1-Ply 49GSM Newspaper"
+);
+
+// H. Least-Wastage DB Sheet Selector (Backend + Frontend Parity)
+const dbCandidates = [
+  { rawWidthInch: 18, rawHeightInch: 22, looseSheetRate: 1.5, reamRate: 700 },
+  { rawWidthInch: 23, rawHeightInch: 36, looseSheetRate: 3.1, reamRate: 1400 },
+  { rawWidthInch: 25, rawHeightInch: 36, looseSheetRate: 3.4, reamRate: 1550 },
+];
+const leastA4Backend = selectLeastWastageRawSheet({ finishedWidth: 8.27, finishedHeight: 11.69, candidateSheets: dbCandidates });
+const leastA4Frontend = selectLeastWastageSheetFromDb(dbCandidates, 8.27, 11.69);
+assert(
+  leastA4Backend.rawWidthInch === 18 &&
+    leastA4Backend.rawHeightInch === 22 &&
+    leastA4Backend.bestYield === 4 &&
+    leastA4Frontend.rawWidthInch === 18 &&
+    leastA4Frontend.rawHeightInch === 22 &&
+    leastA4Frontend.yieldPerSheet === 4,
+  "For A4 (8.27x11.69), both backend and frontend must auto-pick 18x22 (4-out, least waste 2.3%)"
+);
+
+const leastLegalBackend = selectLeastWastageRawSheet({ finishedWidth: 8.5, finishedHeight: 14, candidateSheets: dbCandidates });
+const leastLegalFrontend = selectLeastWastageSheetFromDb(dbCandidates, 8.5, 14);
+assert(
+  leastLegalBackend.rawWidthInch === 23 &&
+    leastLegalBackend.rawHeightInch === 36 &&
+    leastLegalBackend.bestYield === 6 &&
+    leastLegalFrontend.rawWidthInch === 23 &&
+    leastLegalFrontend.rawHeightInch === 36 &&
+    leastLegalFrontend.yieldPerSheet === 6,
+  "For Legal (8.5x14), both backend and frontend must auto-pick 23x36 (6-out, least waste 13.8%)"
+);
+
+// I. SalesBillBookEngine Punching / Perforation check
+const sbbPunch = calculateSalesBillBookQuote(
+  {
+    sizeId: "a4",
+    quantity: 10,
+    setsPerBook: 100,
+    plies: [{ paperType: "Newspaper", gsm: 49, colour: "White" }],
+    bindingType: "normal",
+    numbering: true,
+    punching: true,
+  },
+  {
+    papers: [
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "White", looseSheetRate: 0.8, reamRate: 330 },
+    ],
+  }
+);
+assert(
+  sbbPunch.punchingCost === 20 && sbbPunch.finalOrderPrice === 644,
+  "SalesBillBookEngine with numbering+punching on 10 books must add ₹20+₹20 (₹604 -> ₹644)"
+);
 
 console.log("\n=================================================");
 console.log(`🏁 TEST RESULTS: ${passedTests} / ${totalTests} TESTS PASSED`);

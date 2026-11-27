@@ -6,7 +6,10 @@ import PaperRate from "../models/PaperRate.js";
 import PrintingRateMaster from "../models/PrintingRateMaster.js";
 import BindingRateMaster from "../models/BindingRateMaster.js";
 import FinishingRateMaster from "../models/FinishingRateMaster.js";
-import { calculateCommercialPrintOrder } from "../services/printingCalcEngine.js";
+import {
+  calculateCommercialPrintOrder,
+  selectLeastWastageRawSheet,
+} from "../services/printingCalcEngine.js";
 import { verifyToken } from "../utils/authUtils.js";
 
 function getRequester(req) {
@@ -50,6 +53,40 @@ export async function calculatePrintJob(req, res) {
       }
     }
 
+    // Fetch live Printing, Binding & Finishing Master rates from MongoDB
+    const [printingDocs, bindingDocs, finishingDocs] = await Promise.all([
+      PrintingRateMaster.find({ isActive: true }).lean(),
+      BindingRateMaster.find({ isActive: true }).lean(),
+      FinishingRateMaster.find({ isActive: true }).lean(),
+    ]);
+
+    const printRateMap = Object.fromEntries(printingDocs.map((r) => [r.rateKey, Number(r.rate)]));
+    const finishRateMap = Object.fromEntries(finishingDocs.map((r) => [r.serviceKey, Number(r.ratePerBook)]));
+
+    const bindingMatch = bindingDocs.find(
+      (b) =>
+        b.bindingCode === String(body.bindingType || "").toUpperCase() ||
+        b.bindingType.toLowerCase() === String(body.bindingType || "Normal Binding").toLowerCase()
+    );
+    const resolvedBindingRate = body.bindingRate ?? bindingMatch?.ratePerUnit ?? 25;
+
+    const masterRates = {
+      masterRate: printRateMap.OFFSET_MASTER_LEGAL ?? 30,
+      runRate: printRateMap.OFFSET_RUN_PER_1000 ?? 70,
+      numberingRatePerBook: finishRateMap.FINISH_NUMBERING ?? 2,
+      punchingRatePerBook: finishRateMap.FINISH_PUNCHING ?? 2,
+      digitalRates: {
+        "12x18": {
+          front: printRateMap.DIGITAL_12X18_FRONT ?? 6,
+          both: printRateMap.DIGITAL_12X18_BOTH ?? 7,
+        },
+        "13x19": {
+          front: printRateMap.DIGITAL_13X19_FRONT ?? 7,
+          both: printRateMap.DIGITAL_13X19_BOTH ?? 9,
+        },
+      },
+    };
+
     const calcResult = calculateCommercialPrintOrder({
       productName: body.productName || "Bill Book",
       quantity: body.quantity || 10,
@@ -59,13 +96,14 @@ export async function calculatePrintJob(req, res) {
       plyCount: body.plyCount || 1,
       plyConfigurations: plies,
       bindingType: body.bindingType || "Normal Binding",
-      bindingRate: body.bindingRate || 25,
+      bindingRate: resolvedBindingRate,
       hasNumbering: Boolean(body.hasNumbering),
       numberingStart: body.numberingStart || 1,
       hasPunching: Boolean(body.hasPunching),
       negotiatedSellingPrice: body.negotiatedSellingPrice,
-      targetMarginPercent: body.targetMarginPercent || 25,
-      gstRate: body.gstRate || 0,
+      targetMarginPercent: body.targetMarginPercent ?? 25,
+      gstRate: body.gstRate ?? 0,
+      masterRates,
     });
 
     // Security Firewall: Sales Executive only receives salesExecutiveView
@@ -233,6 +271,52 @@ export async function createJobCardFromQuote(req, res) {
     });
   } catch (error) {
     console.error("Create Job Card error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+// POST /api/quotations/optimal-sheet
+// Picks the least-wastage raw sheet from active PaperMaster records in MongoDB
+export async function getOptimalRawSheetFromDb(req, res) {
+  try {
+    const { finishedWidth, finishedHeight, totalPages = 1000 } = req.body || {};
+    const fW = Number(finishedWidth);
+    const fH = Number(finishedHeight);
+    if (!Number.isFinite(fW) || !Number.isFinite(fH) || fW <= 0 || fH <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid finishedWidth and finishedHeight are required.",
+      });
+    }
+
+    const papers = await PaperMaster.find({ isActive: true }).lean();
+    const paperIds = papers.map((p) => p._id);
+    const rates = await PaperRate.find({
+      paperId: { $in: paperIds },
+      effectiveTill: null,
+    }).lean();
+    const rateMap = new Map(rates.map((r) => [r.paperId.toString(), r]));
+
+    const candidateSheets = papers.map((p) => {
+      const r = rateMap.get(p._id.toString());
+      return {
+        rawWidthInch: p.rawWidthInch,
+        rawHeightInch: p.rawHeightInch,
+        looseSheetRate: p.looseSheetRate > 0 ? p.looseSheetRate : (r?.looseSheetRate ?? 1.5),
+        reamRate: p.reamRate > 0 ? p.reamRate : (r?.reamRate ?? 700),
+      };
+    });
+
+    const optimal = selectLeastWastageRawSheet({
+      finishedWidth: fW,
+      finishedHeight: fH,
+      totalPages: Number(totalPages) || 1000,
+      candidateSheets,
+    });
+
+    return res.json({ success: true, data: optimal });
+  } catch (error) {
+    console.error("Get Optimal Raw Sheet error:", error);
     return res.status(500).json({ success: false, message: error.message });
   }
 }

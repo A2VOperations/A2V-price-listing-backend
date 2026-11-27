@@ -4,13 +4,15 @@ import {
   createQuotation,
   getQuotations,
   createJobCardFromQuote,
+  getOptimalRawSheetFromDb,
 } from "../controllers/quotationController.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Calculation endpoint (can be called by authenticated users or public quotation calculator)
+// Calculation & least-wastage sheet selection endpoints
 router.post("/calculate", calculatePrintJob);
+router.post("/optimal-sheet", getOptimalRawSheetFromDb);
 
 // Quotation management (requires login)
 router.post("/", requireAuth, createQuotation);
