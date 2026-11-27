@@ -801,6 +801,55 @@ assert(
   "4 colours on a layer must use 4 Masters (₹120) and 4 runs"
 );
 
+// L. Per-run ₹70 slab scaling on multi-colour layers (even when sets < 1,000, e.g. 500 sheets)
+const runScaling500_2and1 = calculateSalesBillBookQuote(
+  {
+    sizeId: "a4",
+    quantity: 5,
+    setsPerBook: 100,
+    plies: [
+      { paperType: "Newspaper", gsm: 49, colour: "White", inkColours: ["Black", "Red"] },
+      { paperType: "Newspaper", gsm: 49, colour: "Yellow", inkColours: ["Black"] },
+    ],
+    bindingType: "normal",
+    salesMarginPercent: 0,
+  },
+  {
+    papers: [
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "White", looseSheetRate: 0.8, reamRate: 330 },
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "Yellow", looseSheetRate: 1.2, reamRate: 570 },
+    ],
+  }
+);
+const runScaling500_2and2 = calculateSalesBillBookQuote(
+  {
+    sizeId: "a4",
+    quantity: 5,
+    setsPerBook: 100,
+    plies: [
+      { paperType: "Newspaper", gsm: 49, colour: "White", inkColours: ["Black", "Red"] },
+      { paperType: "Newspaper", gsm: 49, colour: "Yellow", inkColours: ["Black", "Red"] },
+    ],
+    bindingType: "normal",
+    salesMarginPercent: 0,
+  },
+  {
+    papers: [
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "White", looseSheetRate: 0.8, reamRate: 330 },
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "Yellow", looseSheetRate: 1.2, reamRate: 570 },
+    ],
+  }
+);
+assert(
+  runScaling500_2and1.numMasters === 2 &&
+    runScaling500_2and1.totalRuns === 3 &&
+    runScaling500_2and1.runCost === 210 &&
+    runScaling500_2and2.numMasters === 2 &&
+    runScaling500_2and2.totalRuns === 4 &&
+    runScaling500_2and2.runCost === 280,
+  "500 sheets: L1(2)+L2(1) -> 2 Masters & 3 runs (₹210); L1(2)+L2(2) -> 2 Masters & 4 runs (₹280, +₹70)"
+);
+
 console.log("\n=================================================");
 console.log(`🏁 TEST RESULTS: ${passedTests} / ${totalTests} TESTS PASSED`);
 console.log("=================================================");
