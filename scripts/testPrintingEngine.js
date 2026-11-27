@@ -703,6 +703,104 @@ assert(
   "SalesBillBookEngine with numbering+punching on 10 books must add ₹20+₹20 (₹604 -> ₹644)"
 );
 
+// J. Multi-colour Layer 1 (2 or 3 colours -> +₹30 per extra colour, shared across layers)
+const multiColour2 = calculateSalesBillBookQuote(
+  {
+    sizeId: "a4",
+    quantity: 10,
+    setsPerBook: 100,
+    plies: [
+      { paperType: "Newspaper", gsm: 49, colour: "White", inkColours: ["Black", "Red"] },
+      { paperType: "Newspaper", gsm: 49, colour: "Yellow", inkColours: ["Black", "Red"] },
+    ],
+    bindingType: "normal",
+    salesMarginPercent: 0,
+  },
+  {
+    papers: [
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "White", looseSheetRate: 0.8, reamRate: 330 },
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "Yellow", looseSheetRate: 1.2, reamRate: 570 },
+    ],
+  }
+);
+assert(
+  multiColour2.numMasters === 2 && multiColour2.masterCost === 60 && multiColour2.totalRuns === 4,
+  "2-colour Layer 1 across 2 plies must use 2 Masters (₹60, not 4 Masters) and 4 runs"
+);
+
+const multiColour3 = calculateSalesBillBookQuote(
+  {
+    sizeId: "a4",
+    quantity: 10,
+    setsPerBook: 100,
+    plies: [
+      { paperType: "Newspaper", gsm: 49, colour: "White", inkColours: ["Black", "Red", "Blue"] },
+      { paperType: "Newspaper", gsm: 49, colour: "Yellow", inkColours: ["Black", "Red", "Blue"] },
+    ],
+    bindingType: "normal",
+    salesMarginPercent: 0,
+  },
+  {
+    papers: [
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "White", looseSheetRate: 0.8, reamRate: 330 },
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "Yellow", looseSheetRate: 1.2, reamRate: 570 },
+    ],
+  }
+);
+assert(
+  multiColour3.numMasters === 3 && multiColour3.masterCost === 90 && multiColour3.totalRuns === 6,
+  "3-colour Layer 1 across 2 plies must use 3 Masters (₹90) and 6 runs"
+);
+
+// K. Independent Layers 1-4 Ink Master Sharing & 4-Colour Support
+const crossLayerMasters = calculateSalesBillBookQuote(
+  {
+    sizeId: "a4",
+    quantity: 10,
+    setsPerBook: 100,
+    plies: [
+      { paperType: "Newspaper", gsm: 49, colour: "White", inkColours: ["Black"] },
+      { paperType: "Newspaper", gsm: 49, colour: "Yellow", inkColours: ["Red"] },
+      { paperType: "Newspaper", gsm: 49, colour: "Pink", inkColours: ["Red"] },
+    ],
+    bindingType: "normal",
+    salesMarginPercent: 0,
+  },
+  {
+    papers: [
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "White", looseSheetRate: 0.8, reamRate: 330 },
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "Yellow", looseSheetRate: 1.2, reamRate: 570 },
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "Pink", looseSheetRate: 1.2, reamRate: 570 },
+    ],
+  }
+);
+assert(
+  crossLayerMasters.numMasters === 2 && crossLayerMasters.masterCost === 60 && crossLayerMasters.totalRuns === 3,
+  "L1=Black, L2=Red, L3=Red must use 2 Masters (₹60, L3 shares Red master) and 3 runs"
+);
+
+const fourColoursTest = calculateSalesBillBookQuote(
+  {
+    sizeId: "a4",
+    quantity: 10,
+    setsPerBook: 100,
+    plies: [
+      { paperType: "Newspaper", gsm: 49, colour: "White", inkColours: ["Black", "Red", "Blue", "Green"] },
+    ],
+    bindingType: "normal",
+    salesMarginPercent: 0,
+  },
+  {
+    papers: [
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "White", looseSheetRate: 0.8, reamRate: 330 },
+    ],
+  }
+);
+assert(
+  fourColoursTest.numMasters === 4 && fourColoursTest.masterCost === 120 && fourColoursTest.totalRuns === 4,
+  "4 colours on a layer must use 4 Masters (₹120) and 4 runs"
+);
+
 console.log("\n=================================================");
 console.log(`🏁 TEST RESULTS: ${passedTests} / ${totalTests} TESTS PASSED`);
 console.log("=================================================");
