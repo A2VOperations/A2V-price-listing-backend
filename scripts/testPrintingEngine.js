@@ -602,12 +602,33 @@ const sbbVendorRaw = calculateSalesBillBookQuote(
     printProcess: "single_color_offset",
     bindingType: "normal",
     numbering: false,
+    salesMarginPercent: 0,
   },
   {
     papers: [
       { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "White", looseSheetRate: 0.8, reamRate: 330 },
     ],
   }
+);
+const sbbWith50Margin = calculateSalesBillBookQuote(
+  {
+    sizeId: "a4",
+    quantity: 10,
+    setsPerBook: 100,
+    plies: [{ paperType: "Newspaper", gsm: 49, colour: "White" }],
+    printProcess: "single_color_offset",
+    bindingType: "normal",
+    numbering: false,
+  },
+  {
+    papers: [
+      { rawWidthInch: 18, rawHeightInch: 22, paperType: "Newspaper", gsm: 49, colour: "White", looseSheetRate: 0.8, reamRate: 330 },
+    ],
+  }
+);
+assert(
+  sbbWith50Margin.totalProductionCost === 604 && sbbWith50Margin.finalOrderPrice === 1208,
+  "SalesBillBookEngine default 50% margin on ₹604 vendor cost must yield ₹1,208 selling price"
 );
 const backendVendorRaw = calculateCommercialPrintOrder({
   quantity: 10,
@@ -669,6 +690,7 @@ const sbbPunch = calculateSalesBillBookQuote(
     bindingType: "normal",
     numbering: true,
     punching: true,
+    salesMarginPercent: 0,
   },
   {
     papers: [
